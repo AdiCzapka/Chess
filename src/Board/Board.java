@@ -24,8 +24,6 @@ public class Board {
                 else if (i == 7 && j == 4) board[i][j] = 'k';
                 else if (i == 1) board[i][j] = 'P';
                 else if (i == 6) board[i][j] = 'p';
-                //temp
-                else if (i == 5 && j == 4)  board[i][j] = 'N';
                 else board[i][j] = '.';
             }
         }
