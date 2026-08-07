@@ -5,7 +5,8 @@ import Pieces.*;
 
 public class Main {
     public static void main(String[] args) {
-        //Start();
+        System.out.println("Welcopme to chess. 1. Play against bot. 2. Bot plays against itself");
+        Start();
     }
 
     public static void Start() {
@@ -15,50 +16,54 @@ public class Main {
         Scanner input = new Scanner(System.in);
         StringBuilder stringBuilder = new StringBuilder();
         ArrayList<Hash> hashTable = new ArrayList<>();
-        int moveCount50 = 0;
+        int moveCount100 = 0;
         board.printBoard();
         System.out.println("White or Black");
         String choice = input.nextLine();
         boolean playerIsWhite = choice.equalsIgnoreCase("White");
         String enPassantSquare = null;
         ArrayList<String> whitePieces = new ArrayList<>();
-        whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1"); whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
-        whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
+        //whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1"); whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
+        //whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
+        whitePieces.add("a1"); whitePieces.add("h1"); whitePieces.add("e1");
         ArrayList<String> blackPieces = new ArrayList<>();
-        blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
-        blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
+        //blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
+        //blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
+        blackPieces.add("e8"); blackPieces.add("a8"); blackPieces.add("h8");
         boolean a1Castling = true;
         boolean h1Castling = true;
         boolean a8Castling = true;
         boolean h8Castling = true;
         //Start game loop
-        PlayGame(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount50, hashTable);
+        PlayGame(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
     }
-    public static void PlayGame(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount50, ArrayList<Hash> hashTable) {
+    public static void PlayGame(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable) {
         //Determine if plaeyr or computer goes first
         if  (playerIsWhite) {
-            PlayerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount50, hashTable);
+            PlayerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
         }
-        else ComputerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount50, hashTable);
+        else ComputerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
     }
-    public static void PlayerMove(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare,  ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder,  boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount50, ArrayList<Hash> hashTable) {
+    public static void PlayerMove(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare,  ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder,  boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable) {
         //Let player pick piece to move
+        board.printBoard();
         boolean validSquareOnBoard = false;
         boolean pieceIsUsers = false;
         Square toBeMoved = null;
-        int pieceIndex = 0;
         String userMove;
         ArrayList<String> playerMoves = new ArrayList<>();
+        String pieceToMoveString = "";
         boolean pickedValidMove = false;
         do {
-            pieceIndex = 0;
+            Board tempBoard = CopyBoard(board);
             //Check square belongs on board, then check that the piece belongs to player
             do {
                 do {
                     //Inner loop checks that the square is on the board
                     System.out.println("Piece to move: "); //Enter something like 'e4'
+                    pieceToMoveString = input.nextLine();
                     //Convert 'e4' into a 2d array coordinate
-                    toBeMoved = StringToSquare(input.nextLine());
+                    toBeMoved = StringToSquare(pieceToMoveString);
                     if ((toBeMoved.getRow() < 8) && (toBeMoved.getCol() < 8) && (toBeMoved.getRow() >= 0) && (toBeMoved.getCol() >= 0))
                         validSquareOnBoard = true;
                 } while (!validSquareOnBoard);
@@ -74,27 +79,27 @@ public class Main {
             switch (board.getPiece(toBeMoved.getRow(), toBeMoved.getCol())) {
                 case ('P'):
                 case ('p'):
-                    playerMoves = PawnMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder, enPassantSquare);
+                    playerMoves = PawnMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder, enPassantSquare);
                     break;
                 case ('R'):
                 case ('r'):
-                    playerMoves = RookMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder);
+                    playerMoves = RookMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder);
                     break;
                 case ('B'):
                 case ('b'):
-                    playerMoves = BishopMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder);
+                    playerMoves = BishopMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder);
                     break;
                 case ('N'):
                 case ('n'):
-                    playerMoves = KnightMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder);
+                    playerMoves = KnightMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder);
                     break;
                 case ('Q'):
                 case ('q'):
-                    playerMoves = QueenMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder);
+                    playerMoves = QueenMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder);
                     break;
                 case ('K'):
                 case ('k'):
-                    playerMoves = KingMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling);
+                    playerMoves = KingMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling);
                     break;
             }
             //Once we get the moves the piece can make, ask the user to pick one of the moves provided
@@ -107,11 +112,13 @@ public class Main {
             userMove = input.nextLine();
             //If user didn't pick one of the available moves, make them pick a square again to select a piece to move
             for (String move : playerMoves) {
-                pieceIndex++;
                 if (userMove.equalsIgnoreCase(move)) pickedValidMove = true;
             }
         } while (!pickedValidMove);
-        pieceIndex--;
+        //Check if castling picked
+        if (userMove.equals("O-O-O") || userMove.equals("O-O")) {
+            PlayerCastling(input, board, playerIsWhite, enPassantSquare,  whitePieces, blackPieces, stringBuilder,  a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, userMove);
+        }
         //Make the move and update whitePieces/blackPieces with capture
         Square moveSquare = StringToSquare(userMove);
         boolean captureMade = false;
@@ -140,22 +147,34 @@ public class Main {
         char pieceSymbol = board.getPiece(toBeMoved.getRow(), toBeMoved.getCol());
         board.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
         board.setPiece(moveSquare.getRow(), moveSquare.getCol(), pieceSymbol);
+        int pieceIndex = 0;
         if (playerIsWhite) {
+            for (String piece : whitePieces) {
+                if (piece.equals(pieceToMoveString)) break;
+                else pieceIndex++;
+            }
             whitePieces.remove(pieceIndex);
             whitePieces.add(userMove);
         }
         else {
+            for (String piece : blackPieces) {
+                if (piece.equals(pieceToMoveString)) break;
+                else pieceIndex++;
+            }
             blackPieces.remove(pieceIndex);
             blackPieces.add(userMove);
         }
-
         //Handle Promotion
+        boolean correctSymbol = false;
         if ((pieceSymbol == 'P' && moveSquare.getRow() == 7) || (pieceSymbol == 'p' && moveSquare.getRow() == 0)) {
             System.out.println("Pick a piece to promote your pawn to: Queen (Q), Rook (R), Bishop (B), Knight(N)");
             char newPiece;
             do {
                 newPiece = Character.toUpperCase(input.nextLine().charAt(0));
-            } while ((newPiece) != ('Q' | 'R' | 'B' | 'N'));
+                if (newPiece == 'Q' || newPiece == 'R' || newPiece == 'B' || newPiece == 'N') correctSymbol = true;
+            } while (!correctSymbol);
+            if (playerIsWhite) board.setPiece(moveSquare.getRow(), moveSquare.getCol(), newPiece);
+            else board.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(newPiece));
         }
         //Check opponent has legal moves. If not, checkmate/stalemate
         boolean whiteMoveNext = !playerIsWhite;
@@ -168,21 +187,18 @@ public class Main {
             }
         }
         //50 move rule
-        if (!playerIsWhite) {
-            moveCount50++;
-            if (captureMade) moveCount50 = 0;
-            else if (pieceSymbol == ('p' | 'P')) moveCount50 = 0;
-            if (moveCount50 >= 50) {
-                System.out.println("Draw by 50 move rule");
-                System.exit(0);
-            }
+        moveCount100++;
+        if (captureMade) moveCount100 = 0;
+        else if (pieceSymbol == 'p' || pieceSymbol == 'P') moveCount100 = 0;
+        if (moveCount100 >= 100) {
+            System.out.println("Draw by 50 move rule");
+            System.exit(0);
         }
+
         //Check 3-fold repetition
         hashTable = HashPosition(board, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, whiteMoveNext, stringBuilder, hashTable);
-
-
         //If moves are available, pass onto computer to make their move
-        if (movesAvailable) ComputerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount50, hashTable);
+        if (movesAvailable) ComputerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
         else {
             boolean checkmate = CheckIfCheck(board, whitePieces, blackPieces, moveSquare, stringBuilder);
             if (checkmate) {
@@ -196,20 +212,44 @@ public class Main {
         }
     }
     public static ArrayList<String> KingMove(Board board, Square toBeMoved, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling) {
+        stringBuilder.setLength(0);
         //Get all the theoretical moves that the king can make
-        ArrayList<String> PseudoMoves = KingAttacks(board, SquareToCoordinate(toBeMoved, stringBuilder), stringBuilder);
+        ArrayList<String> PseudoMoves = KingAttacks(board, SquareToString(toBeMoved, stringBuilder), stringBuilder);
         ArrayList<String> finalMoves = new ArrayList<>();
+        ArrayList<String> newWhitePieces = new ArrayList<>();
+        ArrayList<String> newBlackPieces = new ArrayList<>();
+        int pieceIndex = 0;
         boolean pieceIsWhite = (Character.isUpperCase(board.getPiece(toBeMoved.getRow(), toBeMoved.getCol())));
+
+
+
         //For each one, check if it leads to the king being in check
         //Simulate the move
         Board tempBoard;
         for (String move : PseudoMoves) {
-            tempBoard = board;
+            //Create copy of board to pass into function
+            tempBoard = CopyBoard(board);
             Square moveSquare = StringToSquare(move);
+            //Do move on temporary board
             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
             if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'K');
             else tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'k');
-            boolean isCheck = CheckIfCheck(tempBoard, whitePieces, blackPieces, moveSquare, stringBuilder);
+            //Create list of updated white pieces/ black pieces. It should be the same, but include the moved piece
+            if (pieceIsWhite) {
+                newBlackPieces.addAll(blackPieces);
+                for (String piece : whitePieces){
+                    if (board.getPiece(StringToSquare(move).getRow(), StringToSquare(move).getCol()) != 'K') newWhitePieces.add(piece);
+                }
+                newWhitePieces.add(CoordinateToString(moveSquare.getRow(), moveSquare.getCol(), stringBuilder));
+            }
+            else {
+                newWhitePieces.addAll(whitePieces);
+                for (String piece : blackPieces){
+                    if (board.getPiece(StringToSquare(move).getRow(), StringToSquare(move).getCol()) != 'K') newBlackPieces.add(piece);
+                }
+                newBlackPieces.add(CoordinateToString(moveSquare.getRow(), moveSquare.getCol(), stringBuilder));
+            }
+            boolean isCheck = CheckIfCheck(tempBoard, newWhitePieces, newBlackPieces, moveSquare, stringBuilder);
             if (!isCheck) finalMoves.add(move);
         }
         //Onto castling (uh oh)
@@ -268,7 +308,7 @@ public class Main {
         }
         //Now that we have all the possible moves, check if any leave king in check
         for (String move : PseudoMoves) {
-            tempBoard = board;
+            tempBoard = CopyBoard(board);
             Square moveSquare = StringToSquare(move);
             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
             if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'P');
@@ -280,13 +320,13 @@ public class Main {
     }
     public static ArrayList<String> KnightMove(Board board, Square toBeMoved, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder) {
         //Get all theoretical moves that knight can make
-        ArrayList<String> pseudoMoves = KnightAttacks(board, SquareToCoordinate(toBeMoved, stringBuilder), stringBuilder);
+        ArrayList<String> pseudoMoves = KnightAttacks(board, SquareToString(toBeMoved, stringBuilder), stringBuilder);
         ArrayList<String> finalMoves = new ArrayList<>();
         boolean pieceIsWhite = (Character.isUpperCase(board.getPiece(toBeMoved.getRow(), toBeMoved.getCol())));
         //Simulate move
         Board tempBoard;
         for (String move : pseudoMoves) {
-            tempBoard = board;
+            tempBoard = CopyBoard(board);
             Square moveSquare = StringToSquare(move);
             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
             if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'N');
@@ -298,13 +338,13 @@ public class Main {
     }
     public static ArrayList<String> RookMove(Board board, Square toBeMoved, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder) {
         //Get theoretical moves
-        ArrayList<String> pseudoMoves = RookAttacks(board, SquareToCoordinate(toBeMoved, stringBuilder), stringBuilder);
+        ArrayList<String> pseudoMoves = RookAttacks(board, SquareToString(toBeMoved, stringBuilder), stringBuilder);
         ArrayList<String> finalMoves = new ArrayList<>();
         boolean pieceIsWhite = (Character.isUpperCase(board.getPiece(toBeMoved.getRow(), toBeMoved.getCol())));
         //Simulate move
         Board tempBoard;
         for (String move : pseudoMoves) {
-            tempBoard = board;
+            tempBoard = CopyBoard(board);
             Square moveSquare = StringToSquare(move);
             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
             if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'R');
@@ -316,13 +356,13 @@ public class Main {
     }
     public static ArrayList<String> BishopMove(Board board, Square toBeMoved, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder) {
         //Get theoretical moves
-        ArrayList<String> pseudoMoves = BishopAttacks(board, SquareToCoordinate(toBeMoved, stringBuilder), stringBuilder);
+        ArrayList<String> pseudoMoves = BishopAttacks(board, SquareToString(toBeMoved, stringBuilder), stringBuilder);
         ArrayList<String> finalMoves = new ArrayList<>();
         boolean pieceIsWhite = (Character.isUpperCase(board.getPiece(toBeMoved.getRow(), toBeMoved.getCol())));
         //Simulate move
         Board tempBoard;
         for (String move : pseudoMoves) {
-            tempBoard = board;
+            tempBoard = CopyBoard(board);
             Square moveSquare = StringToSquare(move);
             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
             if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'B');
@@ -334,8 +374,10 @@ public class Main {
     }
     public static ArrayList<String> QueenMove(Board board, Square toBeMoved, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder) {
         //Queen moves like a rook and bishop
-        ArrayList<String> rookMoves = RookMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder);
-        ArrayList<String> bishopMoves = BishopMove(board, toBeMoved, whitePieces, blackPieces, stringBuilder);
+        Board tempBoard = CopyBoard(board);
+        ArrayList<String> rookMoves = RookMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder);
+        tempBoard =  CopyBoard(board);
+        ArrayList<String> bishopMoves = BishopMove(tempBoard, toBeMoved, whitePieces, blackPieces, stringBuilder);
         ArrayList<String> finalMoves =  new ArrayList<>();
         finalMoves.addAll(rookMoves);
         finalMoves.addAll(bishopMoves);
@@ -435,7 +477,7 @@ public class Main {
             String kingSquare = null;
             for (String piece : blackPieces) {
                 Square pieceSquare =  StringToSquare(piece);
-                if (tempBoard.getPiece(pieceSquare.getRow(), pieceSquare.getCol()) == 'K') {
+                if (tempBoard.getPiece(pieceSquare.getRow(), pieceSquare.getCol()) == 'k') {
                     kingSquare = piece;
                 }
             }
@@ -444,32 +486,6 @@ public class Main {
             }
             return false;
         }
-    }
-    public static String CoordinateToString(int row, int col, StringBuilder stringBuilder) {
-        stringBuilder.setLength(0);
-        //Variables to store the letter and number of the square
-        String letter = Character.toString(col + 97);
-        String number = Character.toString(row + 49);
-        //Write square to string builder
-        stringBuilder.append(letter);
-        stringBuilder.append(number);
-        return stringBuilder.toString();
-    }
-    public static Square StringToSquare(String coordinate) {
-        int row = Integer.parseInt(coordinate.substring(1,2)) - 1;
-        char letter = coordinate.charAt(0);
-        int col = letter - 'a';
-        return new Square(row, col);
-    }
-    public static String SquareToCoordinate(Square square, StringBuilder stringBuilder) {
-        stringBuilder.setLength(0);
-        int row = square.getRow();
-        int col = square.getCol();
-        String letter = Character.toString(row + 97);
-        String number = Character.toString(col + 49);
-        stringBuilder.append(letter);
-        stringBuilder.append(number);
-        return stringBuilder.toString();
     }
     public static ArrayList<String> PawnAttacks(Board board, String piece, StringBuilder stringBuilder) {
         stringBuilder.setLength(0);
@@ -668,7 +684,10 @@ public class Main {
         return attacks;
     }
     public static ArrayList<String> CastlingCheck(Board board, ArrayList<String> whitePieces,  ArrayList<String> blackPieces, Square toBeMoved, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, StringBuilder stringBuilder) {
+        stringBuilder.setLength(0);
         ArrayList<String> castling =  new ArrayList<>();
+        ArrayList<String> newWhitePieces = new ArrayList<>();
+        ArrayList<String> newBlackPieces = new ArrayList<>();
         //For castling, king cannot be in check, king or rooks haven't moved, doesn't pass through check and squares between are empty
         //Check if white or black king
         boolean pieceIsWhite = false;
@@ -691,6 +710,15 @@ public class Main {
                             //Simulate the move and check if king would be in check
                             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
                             tempBoard.setPiece(StringToSquare(square).getRow(), StringToSquare(square).getCol(), 'K');
+                            newBlackPieces.addAll(blackPieces);
+                            for (String piece : whitePieces){
+                                if (board.getPiece(StringToSquare(square).getRow(), StringToSquare(square).getCol()) != 'K') newWhitePieces.add(piece);
+                            }
+                            newWhitePieces.add(CoordinateToString(moveSquare.getRow(), moveSquare.getCol(), stringBuilder));
+
+
+
+
                             check = CheckIfCheck(tempBoard, whitePieces, blackPieces, toBeMoved, stringBuilder);
                             if (check) biggerCheck  = true;
                         }
@@ -768,79 +796,308 @@ public class Main {
         return castling;
     }
     public static ArrayList<ArrayList<String>> AllMoves(Board board, boolean whiteMove, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, String enPassantSquare, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling) {
+        stringBuilder.setLength(0);
         //Get all the moves
         ArrayList<ArrayList<String>> moves = new ArrayList<>();
-        ArrayList<String> newMoves = new ArrayList<>();
+        ArrayList<String> pieceMoves = new ArrayList<>();
+        ArrayList<String> deletableMoves = new ArrayList<>();
         //If white moves next, get all the moves for the white pieces
         if (whiteMove) {
             for (String piece : whitePieces) {
+                Board tempBoard = CopyBoard(board);
+                ArrayList<String> newMoves= new ArrayList<>();
                 newMoves.add(piece);
                 switch (board.getPiece(StringToSquare(piece).getRow(), StringToSquare(piece).getCol())) {
                     case 'P':
-                        newMoves = PawnMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, enPassantSquare);
+                        pieceMoves = (PawnMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, enPassantSquare));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
                     case 'R':
-                        newMoves = RookMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                        pieceMoves = (RookMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
                     case 'B':
-                        newMoves = BishopMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                        pieceMoves = (BishopMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
                     case 'N':
-                        newMoves = KnightMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                        pieceMoves = (KnightMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
                     case 'Q':
-                        newMoves = QueenMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                        pieceMoves = (QueenMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
                     case 'K':
-                        newMoves = KingMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling);
+                        pieceMoves = (KingMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
 
                 }
-                newMoves.clear();
+
             }
         }
         else {
             for (String piece : blackPieces) {
+                Board tempBoard = CopyBoard(board);
+                ArrayList<String> newMoves= new ArrayList<>();
                 newMoves.add(piece);
                 switch (board.getPiece(StringToSquare(piece).getRow(), StringToSquare(piece).getCol())) {
-                    case 'P':
-                        newMoves = PawnMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, enPassantSquare);
+                    case 'p':
+                        pieceMoves = (PawnMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, enPassantSquare));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
-                    case 'R':
-                        newMoves = RookMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                    case 'r':
+                        pieceMoves = (RookMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
-                    case 'B':
-                        newMoves = BishopMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                    case 'b':
+                        pieceMoves = (BishopMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
-                    case 'N':
-                        newMoves = KnightMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                    case 'n':
+                        pieceMoves = (KnightMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
-                    case 'Q':
-                        newMoves = QueenMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder);
+                    case 'q':
+                        pieceMoves = (QueenMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
-                    case 'K':
-                        newMoves = KingMove(board, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling);
+                    case 'k':
+                        pieceMoves = (KingMove(tempBoard, StringToSquare(piece), whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling));
+                        newMoves.addAll(pieceMoves);
                         moves.add(newMoves);
                         break;
 
                 }
-                newMoves.clear();
             }
         }
         return moves;
     }
-    public static void ComputerMove(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount50, ArrayList<Hash> hashTable) {
+    public static void PlayerCastling(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare,  ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder,  boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, String userMove) {
+        Square fakeDestionationSquare;
+        ArrayList<String> newWhitePieces = new ArrayList<>();
+        ArrayList<String> newBlackPieces = new ArrayList<>();
+        if (playerIsWhite) {
+            newBlackPieces.addAll(blackPieces);
+            a1Castling = false;
+            h1Castling = false;
+            boolean kingsideCaslting = false;
+            if (userMove.equals("O-O")) kingsideCaslting = true;
+            enPassantSquare = null;
+            int pieceIndex = 0;
+            if (kingsideCaslting) {
+                for (String piece : whitePieces) {
+                    if (!piece.equals("e1") && !piece.equals("h1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                    pieceIndex++;
+                }
+
+                board.setPiece(0, 7, '.');
+                board.setPiece(0, 6, 'K');
+                board.setPiece(0, 5, 'R');
+                board.setPiece(0, 4, '.');
+                newWhitePieces.add("f1");
+                newWhitePieces.add("g1");
+                fakeDestionationSquare = new Square(0,6);
+            } else {
+                for (String piece : whitePieces) {
+                    if (piece.equals("e1") || piece.equals("a1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                    pieceIndex++;
+                }
+                board.setPiece(0, 4, '.');
+                board.setPiece(0, 2, 'K');
+                board.setPiece(0, 3, 'R');
+                board.setPiece(0, 1, '.');
+                board.setPiece(0, 0, '.');
+                newWhitePieces.add("c1");
+                newWhitePieces.add("d1");
+                fakeDestionationSquare = new Square(0,2);
+            }
+        }
+        else {
+            newWhitePieces.addAll(whitePieces);
+            a8Castling = false;
+            h8Castling = false;
+            boolean kingsideCaslting = true;
+            if (userMove.equals("O-O")) kingsideCaslting = false;
+            enPassantSquare = null;
+            int pieceIndex = 0;
+            if (kingsideCaslting) {
+                for (String piece : whitePieces) {
+                    if (piece.equals("e8") || piece.equals("h8")) newBlackPieces.add(whitePieces.get(pieceIndex));
+                    pieceIndex++;
+                }
+                board.setPiece(7, 7, '.');
+                board.setPiece(7, 6, 'k');
+                board.setPiece(7, 5, 'r');
+                board.setPiece(7, 4, '.');
+                newBlackPieces.add("f8");
+                newBlackPieces.add("g8");
+                fakeDestionationSquare = new Square(7,6);
+            } else {
+                for (String piece : whitePieces) {
+                    if (piece.equals("a8") || piece.equals("e8")) newBlackPieces.add(whitePieces.get(pieceIndex));
+                    pieceIndex++;
+                }
+                board.setPiece(7, 4, '.');
+                board.setPiece(7, 2, 'k');
+                board.setPiece(7, 3, 'r');
+                board.setPiece(7, 1, '.');
+                board.setPiece(7, 0, '.');
+                newBlackPieces.add("c8");
+                newBlackPieces.add("d8");
+                fakeDestionationSquare = new Square(7,2);
+            }
+        }
+        //Check opponent has legal moves. If not, checkmate/stalemate
+        boolean whiteMoveNext = !playerIsWhite;
+        ArrayList<ArrayList<String>> opponentMoves = AllMoves(board, whiteMoveNext, newWhitePieces, newBlackPieces, stringBuilder, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling);
+        boolean movesAvailable = false;
+        for (ArrayList<String> moveList : opponentMoves) {
+            if (moveList.size() > 1) {
+                movesAvailable = true;
+                break;
+            }
+        }
+        //50 move rule
+        moveCount100++;
+        if (moveCount100 >= 100) {
+            System.out.println("Draw by 50 move rule");
+            System.exit(0);
+        }
+
+        //Check 3-fold repetition
+        hashTable = HashPosition(board, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, whiteMoveNext, stringBuilder, hashTable);
+        //If moves are available, pass onto computer to make their move
+        if (movesAvailable) ComputerMove(input, board, playerIsWhite, enPassantSquare, newWhitePieces, newBlackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
+        else {
+            boolean checkmate = CheckIfCheck(board, newWhitePieces, newBlackPieces, fakeDestionationSquare, stringBuilder);
+            if (checkmate) {
+                System.out.println("Player Wins!");
+                System.exit(0);
+            }
+            else {
+                System.out.println("Stalemate! Lol skill issue");
+                System.exit(0);
+            }
+        }
+    }
+    public static void ComputerCastling(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare,  ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder,  boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, String computerMove) {
+        Square fakeDestionationSquare;
+        if (!playerIsWhite) {
+            a1Castling = false;
+            h1Castling = false;
+            boolean kingsideCaslting = false;
+            if (computerMove.equals("O-O")) kingsideCaslting = true;
+            enPassantSquare = null;
+            int pieceIndex = 0;
+            if (kingsideCaslting) {
+                for (String piece : whitePieces) {
+                    if (piece.equals("e1") || piece.equals("h1")) whitePieces.remove(pieceIndex);
+                    pieceIndex++;
+                }
+                board.setPiece(0, 7, '.');
+                board.setPiece(0, 6, 'K');
+                board.setPiece(0, 5, 'R');
+                board.setPiece(0, 4, '.');
+                whitePieces.add("f1");
+                whitePieces.add("g1");
+                fakeDestionationSquare = new Square(0,6);
+            } else {
+                for (String piece : whitePieces) {
+                    if (piece.equals("e1") || piece.equals("a1")) whitePieces.remove(pieceIndex);
+                    pieceIndex++;
+                }
+                board.setPiece(0, 4, '.');
+                board.setPiece(0, 2, 'K');
+                board.setPiece(0, 3, 'R');
+                board.setPiece(0, 1, '.');
+                board.setPiece(0, 0, '.');
+                whitePieces.add("c1");
+                whitePieces.add("d1");
+                fakeDestionationSquare = new Square(0,2);
+            }
+        }
+        else {
+            a8Castling = false;
+            h8Castling = false;
+            boolean kingsideCaslting = true;
+            if (computerMove.equals("O-O")) kingsideCaslting = false;
+            enPassantSquare = null;
+            int pieceIndex = 0;
+            if (kingsideCaslting) {
+                for (String piece : whitePieces) {
+                    if (piece.equals("e8") || piece.equals("h8")) whitePieces.remove(pieceIndex);
+                    pieceIndex++;
+                }
+                board.setPiece(7, 7, '.');
+                board.setPiece(7, 6, 'k');
+                board.setPiece(7, 5, 'r');
+                board.setPiece(7, 4, '.');
+                blackPieces.add("f8");
+                blackPieces.add("g8");
+                fakeDestionationSquare = new Square(7,6);
+            } else {
+                for (String piece : whitePieces) {
+                    if (piece.equals("a8") || piece.equals("e8")) whitePieces.remove(pieceIndex);
+                    pieceIndex++;
+                }
+                board.setPiece(7, 4, '.');
+                board.setPiece(7, 2, 'k');
+                board.setPiece(7, 3, 'r');
+                board.setPiece(7, 1, '.');
+                board.setPiece(7, 0, '.');
+                blackPieces.add("c8");
+                blackPieces.add("d8");
+                fakeDestionationSquare = new Square(7,2);
+            }
+        }
+        //Check opponent has legal moves. If not, checkmate/stalemate
+        boolean whiteMoveNext = !playerIsWhite;
+        ArrayList<ArrayList<String>> opponentMoves = AllMoves(board, whiteMoveNext, whitePieces, blackPieces, stringBuilder, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling);
+        boolean movesAvailable = false;
+        for (ArrayList<String> moveList : opponentMoves) {
+            if (moveList.size() > 1) {
+                movesAvailable = true;
+                break;
+            }
+        }
+        //50 move rule
+        moveCount100++;
+        if (moveCount100 >= 100) {
+            System.out.println("Draw by 50 move rule");
+            System.exit(0);
+        }
+
+        //Check 3-fold repetition
+        hashTable = HashPosition(board, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, whiteMoveNext, stringBuilder, hashTable);
+        //If moves are available, pass onto computer to make their move
+        if (movesAvailable) PlayerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
+        else {
+            boolean checkmate = CheckIfCheck(board, whitePieces, blackPieces, fakeDestionationSquare, stringBuilder);
+            if (checkmate) {
+                System.out.println("Player Wins!");
+                System.exit(0);
+            }
+            else {
+                System.out.println("Stalemate! Lol skill issue");
+                System.exit(0);
+            }
+        }
+    }
+    public static void ComputerMove(Scanner input, Board board, boolean playerIsWhite, String enPassantSquare, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable) {
+        stringBuilder.setLength(0);
         //Computer makes random moves. Get all the moves possible
         ArrayList<ArrayList<String>> allMoves =  AllMoves(board, !playerIsWhite, whitePieces, blackPieces, stringBuilder, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling);
         //Get all move number (to be able to make rng moves)
@@ -856,36 +1113,23 @@ public class Main {
         int listNumber = 0;
         //For each list, subtract length from the count of random move. If it becomes negative, the move is in that list
         for (ArrayList<String> moveList : allMoves) {
-            if ((moveList.size() - 1) > randomMove) break;
+            if ((moveList.size() - 1) >= randomMove) break;
             else {
                 randomMove -= moveList.size() - 1;
                 listNumber++;
             }
         }
         //So the random move picked is in the 'listNumber' list, and is the nth move where n = randomMove + 1
+        if (allMoves.get(listNumber).get(randomMove).equals("O-O") || allMoves.get(listNumber).get(randomMove).equals("O-O-O")) {
+            String computerMove = allMoves.get(listNumber).get(randomMove);
+            ComputerCastling(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, computerMove);
+        }
         originSquare = allMoves.get(listNumber).getFirst();
         destinationSquare = allMoves.get(listNumber).get(randomMove);
         Square toBeMoved = StringToSquare(originSquare);
         Square moveSquare = StringToSquare(destinationSquare);
         boolean captureMade = false;
-        if (playerIsWhite) {
-            for (String piece : blackPieces) {
-                pieceIndex++;
-                if (originSquare.equals(piece)) break;
-            }
-            pieceIndex--;
-            blackPieces.remove(pieceIndex);
-            blackPieces.add(destinationSquare);
-        }
-        else {
-            for (String piece : whitePieces) {
-                pieceIndex++;
-                if (originSquare.equals(piece)) break;
-            }
-            pieceIndex--;
-            whitePieces.remove(pieceIndex);
-            whitePieces.add(destinationSquare);
-        }
+        //
         //If white piece captured
         if (Character.isUpperCase(board.getPiece(moveSquare.getRow(), moveSquare.getCol()))) {
             whitePieces.remove(destinationSquare);
@@ -907,15 +1151,38 @@ public class Main {
         else if (toBeMoved.getRow() == 0 && toBeMoved.getCol() == 7) h1Castling = false;
         else if (toBeMoved.getRow() == 7 && toBeMoved.getCol() == 0) a1Castling = false;
         else if (toBeMoved.getRow() == 7 && toBeMoved.getCol() == 7) h1Castling = false;
-        //And now, execute the move
+        //Update whitePieces + blackPieces
         char pieceSymbol = board.getPiece(toBeMoved.getRow(), toBeMoved.getCol());
         board.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
         board.setPiece(moveSquare.getRow(), moveSquare.getCol(), pieceSymbol);
+
+
+        int pieceCount = 0;
+        if (playerIsWhite) {
+            for (String piece : blackPieces) {
+                if (piece.equals(originSquare)) break;
+                else pieceCount++;
+            }
+            blackPieces.remove(pieceCount);
+            blackPieces.add(destinationSquare);
+        }
+        else {
+            for (String piece : whitePieces) {
+                if (piece.equals(originSquare)) break;
+                else pieceCount++;
+            }
+            whitePieces.remove(pieceCount);
+            whitePieces.add(destinationSquare);
+        }
+
         //Handle Promotion
         if ((pieceSymbol == 'P' && moveSquare.getRow() == 7) || (pieceSymbol == 'p' && moveSquare.getRow() == 0)) {
             char[] promotionOptions = {'Q', 'R', 'B', 'N'};
             int randomPromotion = random.nextInt(promotionOptions.length);
             char newPiece = promotionOptions[randomPromotion];
+            if (!playerIsWhite) board.setPiece(moveSquare.getRow(), moveSquare.getCol(), newPiece);
+            else board.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(newPiece));
+
         }
         //Check opponent has legal moves. If not, checkmate/stalemate
         ArrayList<ArrayList<String>> opponentMoves = AllMoves(board, playerIsWhite, whitePieces, blackPieces, stringBuilder, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling);
@@ -927,19 +1194,22 @@ public class Main {
             }
         }
         //50 move rule
-        if (playerIsWhite) {
-            moveCount50++;
-            if (captureMade) moveCount50 = 0;
-            else if (pieceSymbol == ('p' | 'P')) moveCount50 = 0;
-            if (moveCount50 >= 50) {
-                System.out.println("Draw by 50 move rule");
-                System.exit(0);
-            }
+        moveCount100++;
+        if (captureMade) moveCount100 = 0;
+        else if (pieceSymbol == ('p' | 'P')) moveCount100 = 0;
+        if (moveCount100 >= 100) {
+            System.out.println("Draw by 50 move rule");
+            System.exit(0);
         }
+
         //Check 3-fold repetition
         hashTable = HashPosition(board, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, playerIsWhite, stringBuilder, hashTable);
         //If moves are available, pass onto player to make their move
-        if (movesAvailable) PlayerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount50, hashTable);
+        if (movesAvailable) {
+            System.out.println("Computer played " + originSquare + " to " + destinationSquare);
+            PlayerMove(input, board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable);
+
+        }
         else {
             boolean checkmate = CheckIfCheck(board, whitePieces, blackPieces, moveSquare, stringBuilder);
             if (checkmate) {
@@ -953,25 +1223,22 @@ public class Main {
         }
     }
     public static ArrayList<Hash> HashPosition(Board board, String enPassantSquare, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, boolean whiteMovesNext, StringBuilder stringBuilder, ArrayList<Hash> hashTable) {
+        stringBuilder.setLength(0);
         //Get the board position currently
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 stringBuilder.append(board.getPiece(row, col));
             }
         }
-        Square enPassant = StringToSquare(enPassantSquare);
-        int row = enPassant.getRow();
-        int col = enPassant.getCol();
-        stringBuilder.append(Integer.toString(row));
-        stringBuilder.append(Integer.toString(col));
-        if (a1Castling) stringBuilder.append("0");
-        else stringBuilder.append("1");
-        if (h1Castling) stringBuilder.append("0");
-        else stringBuilder.append("1");
-        if (a8Castling) stringBuilder.append("0");
-        else stringBuilder.append("1");
-        if (h8Castling) stringBuilder.append("0");
-        else stringBuilder.append("1");
+        stringBuilder.append(Objects.requireNonNullElse(enPassantSquare, "null"));
+        if (a1Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (h1Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (a8Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (h8Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
         if (whiteMovesNext) stringBuilder.append("1");
         else stringBuilder.append("0");
         String hash = stringBuilder.toString();
@@ -994,4 +1261,72 @@ public class Main {
         }
         return hashTable;
     }
+    public static Board CopyBoard(Board board) {
+        Board newBoard = new Board();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                newBoard.setPiece(row, col, board.getPiece(row, col));
+            }
+        }
+        return  newBoard;
+    }
+    public static ArrayList<String> CreateNewPieceList (Board board, ArrayList<String> whitePieces, ArrayList<String> blackPieces, Square moveSquare, boolean copyWhite, StringBuilder stringBuilder) {
+        //Create a list of the updated pieces to be passed temporarily into functions for move gathering, etc
+        ArrayList<String> newPieces = new ArrayList<>();
+        //Choose list to copy
+        if  (copyWhite) {
+            //If a piece exists on the new board where the list shows, keep it in the new list. Otherwise, don't add it. Then add the piece that has moved on the moveSquare
+            for (String piece : whitePieces) {
+                Square pieceSquare = StringToSquare(piece);
+                //Add all the unchanged pieces
+                if (board.getPiece(pieceSquare.getRow(), pieceSquare.getCol()) != '.') newPieces.add(piece);
+                //Add the new piece
+                newPieces.add(SquareToString(pieceSquare, stringBuilder));
+            }
+
+        }
+        else {
+            //Same for black
+            for (String piece : blackPieces) {
+                Square pieceSquare = StringToSquare(piece);
+                if (board.getPiece(pieceSquare.getRow(), pieceSquare.getCol()) != '.') newPieces.add(piece);
+                newPieces.add(SquareToString(pieceSquare, stringBuilder));
+            }
+        }
+        return newPieces;
+    }
+
+    public static String CoordinateToString(int row, int col, StringBuilder stringBuilder) {
+        stringBuilder.setLength(0);
+        //Variables to store the letter and number of the square
+        String letter = Character.toString(col + 97);
+        String number = Character.toString(row + 49);
+        //Write square to string builder
+        stringBuilder.append(letter);
+        stringBuilder.append(number);
+        return stringBuilder.toString();
+    }
+    public static Square StringToSquare(String coordinate) {
+        //row is number, column is letter
+        int row = Integer.parseInt(coordinate.substring(1,2)) - 1;
+        char letter = coordinate.charAt(0);
+        int col = letter - 'a';
+        return new Square(row, col);
+    }
+    public static String SquareToString(Square square, StringBuilder stringBuilder) {
+        stringBuilder.setLength(0);
+        int row = square.getRow();
+        int col = square.getCol();
+        //letter is column
+        String letter = Character.toString(col + 97);
+        //number is the row
+        String number = Character.toString(row + 49);
+        stringBuilder.append(letter);
+        stringBuilder.append(number);
+        return stringBuilder.toString();
+    }
+
+
+    public static void ComputerGame() {}
+
 }
