@@ -14,16 +14,16 @@ public class Board {
                 //j is column. j = 0 = a
                 if ((i == 0 && (j == 0 || j == 7))) board[i][j] = 'R';
                 else if ((i == 7 && (j == 0 || j == 7))) board[i][j] = 'r';
-                //else if ((i == 0 && (j == 1 || j == 6))) board[i][j] = 'N';
-                //else if ((i == 7 && (j == 1 || j == 6))) board[i][j] = 'n';
-                //else if ((i == 0 && (j == 2 || j == 5))) board[i][j] = 'B';
-                //else if ((i == 7 && (j == 2 || j == 5))) board[i][j] = 'b';
-                //else if (i == 0 && j == 3) board[i][j] = 'Q';
-                //else if (i == 7 && j == 3) board[i][j] = 'q';
+                else if ((i == 0 && (j == 1 || j == 6))) board[i][j] = 'N';
+                else if ((i == 7 && (j == 1 || j == 6))) board[i][j] = 'n';
+                else if ((i == 0 && (j == 2 || j == 5))) board[i][j] = 'B';
+                else if ((i == 7 && (j == 2 || j == 5))) board[i][j] = 'b';
+                else if (i == 0 && j == 3) board[i][j] = 'Q';
+                else if (i == 7 && j == 3) board[i][j] = 'q';
                 else if (i == 0 && j == 4) board[i][j] = 'K';
                 else if (i == 7 && j == 4) board[i][j] = 'k';
-                //else if (i == 1) board[i][j] = 'P';
-                //else if (i == 6) board[i][j] = 'p';
+                else if (i == 1) board[i][j] = 'P';
+                else if (i == 6) board[i][j] = 'p';
                 else board[i][j] = '.';
             }
         }
