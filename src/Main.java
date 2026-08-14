@@ -1,6 +1,9 @@
 import Board.*;
 import java.util.*;
+import java.io.*;
 import Pieces.*;
+
+import javax.print.DocFlavor;
 
 
 public class Main {
@@ -9,7 +12,7 @@ public class Main {
         Scanner input = new Scanner(System.in);
         int choice = input.nextInt();
         if (choice == 1) Start();
-        else if (choice == 2) SelfStart();
+        else if (choice == 2) SelfPlay();
     }
 
     public static void Start() {
@@ -1590,8 +1593,18 @@ public class Main {
             return false;
         }
     }
+
+
+    public static void SelfPlay() {
+        int counter = 0;
+        while (counter < 10) {
+            SelfStart();
+            counter++;
+        }
+    }
     public static void SelfStart() {
         //Set up the board, input, player colours, etc
+        File file = new File("GameCollection.txt");
         Board board = new Board();
         StringBuilder stringBuilder = new StringBuilder();
         StringBuilder gameNotation = new StringBuilder();
@@ -1611,9 +1624,10 @@ public class Main {
         boolean a8Castling = true;
         boolean h8Castling = true;
         //Start game loop
-        SelfMove(board, false, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+        SelfMove(board, false, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter, file);
+        if (true) return;
     }
-    public static void SelfMove(Board board, boolean playerIsWhite, String enPassantSquare, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, StringBuilder gameNotation, int turnCounter) {
+    public static void SelfMove(Board board, boolean playerIsWhite, String enPassantSquare, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, StringBuilder gameNotation, int turnCounter, File file) {
         turnCounter++;
         stringBuilder.setLength(0);
         //Computer makes random moves. Get all the moves possible
@@ -1640,7 +1654,8 @@ public class Main {
         //So the random move picked is in the 'listNumber' list, and is the nth move where n = randomMove + 1
         if (allMoves.get(listNumber).get(randomMove).equals("O-O") || allMoves.get(listNumber).get(randomMove).equals("O-O-O")) {
             String computerMove = allMoves.get(listNumber).get(randomMove);
-            SelfComputerCastling(board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, computerMove, gameNotation, turnCounter);
+            SelfComputerCastling(board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, computerMove, gameNotation, turnCounter, file);
+            if (true) return;
         }
         originSquare = allMoves.get(listNumber).getFirst();
         destinationSquare = allMoves.get(listNumber).get(randomMove);
@@ -1751,8 +1766,6 @@ public class Main {
                 break;
             }
         }
-        //Say what move was played
-        System.out.println("Computer played " + originSquare + " to " + destinationSquare);
 
         //50 move rule
         moveCount100++;
@@ -1762,14 +1775,20 @@ public class Main {
             System.out.println("Draw by 50 move rule");
             gameNotation.append("1/2-1/2");
             System.out.println(gameNotation);
-            System.exit(0);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                writer.newLine();
+                writer.write(gameNotation.toString());
+            } catch (IOException e) {
+                System.out.println("Error");
+            }
+            if (true) return;
         }
 
         //Check 3-fold repetition
-        hashTable = HashPosition(board, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, playerIsWhite, stringBuilder, hashTable);
+        hashTable = SelfHashPosition(board, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, playerIsWhite, stringBuilder, hashTable, gameNotation, file);
         //If moves are available, pass onto player to make their move
 
-        if (movesAvailable) SelfMove(board, !playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+        if (movesAvailable) SelfMove(board, !playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter, file);
         else {
             boolean checkmate = CheckIfCheckmate(board, whitePieces, blackPieces, moveSquare, stringBuilder);
             if (checkmate) {
@@ -1779,18 +1798,30 @@ public class Main {
                 if (!playerIsWhite) gameNotation.append("1-0");
                 else gameNotation.append("0-1");
                 System.out.println(gameNotation);
-                System.exit(0);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                    writer.newLine();
+                    writer.write(gameNotation.toString());
+                } catch (IOException e) {
+                    System.out.println("Error");
+                }
+                if (true) return;
             }
             else {
                 System.out.println("Stalemate! Lol skill issue");
                 gameNotation.append("1/2-1/2");
                 System.out.println(gameNotation);
-                System.exit(0);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                    writer.newLine();
+                    writer.write(gameNotation.toString());
+                } catch (IOException e) {
+                    System.out.println("Error");
+                }
+                if (true) return;
             }
         }
 
     }
-    public static void SelfComputerCastling(Board board, boolean playerIsWhite, String enPassantSquare,  ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder,  boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, String computerMove, StringBuilder gameNotation, int turnCounter) {
+    public static void SelfComputerCastling(Board board, boolean playerIsWhite, String enPassantSquare,  ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder,  boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, String computerMove, StringBuilder gameNotation, int turnCounter, File file) {
         turnCounter++;
         Square fakeDestionationSquare;
         ArrayList<String> newWhitePieces = new ArrayList<>();
@@ -1887,13 +1918,19 @@ public class Main {
             System.out.println("Draw by 50 move rule");
             gameNotation.append("1/2-1/2");
             System.out.println(gameNotation);
-            System.exit(0);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                writer.newLine();
+                writer.write(gameNotation.toString());
+            } catch (IOException e) {
+                System.out.println("Error");
+            }
+            if (true) return;
         }
 
         //Check 3-fold repetition
-        hashTable = HashPosition(board, null, a1Castling, h1Castling, a8Castling, h8Castling, playerIsWhite, stringBuilder, hashTable);
+        hashTable = SelfHashPosition(board, null, a1Castling, h1Castling, a8Castling, h8Castling, playerIsWhite, stringBuilder, hashTable, gameNotation, file);
         //If moves are available, pass onto computer to make their move
-        if (movesAvailable) SelfMove(board, !playerIsWhite, null, newWhitePieces, newBlackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+        if (movesAvailable) SelfMove(board, !playerIsWhite, null, newWhitePieces, newBlackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter, file);
         else {
             boolean checkmate = CheckIfCheckmate(board, whitePieces, blackPieces, fakeDestionationSquare, stringBuilder);
             if (checkmate) {
@@ -1903,15 +1940,73 @@ public class Main {
                 if (!playerIsWhite) gameNotation.append("1-0");
                 else gameNotation.append("0-1");
                 System.out.println(gameNotation);
-                System.exit(0);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                    writer.newLine();
+                    writer.write(gameNotation.toString());
+                } catch (IOException e) {
+                    System.out.println("Error");
+                }
+                if (true) return;
             }
             else {
                 System.out.println("Stalemate.");
                 gameNotation.append("1/2-1/2");
                 System.out.println(gameNotation);
-                System.exit(0);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                    writer.newLine();
+                    writer.write(gameNotation.toString());
+                } catch (IOException e) {
+                    System.out.println("Error");
+                }
+                if (true) return;
             }
         }
     }
-
+    public static ArrayList<Hash> SelfHashPosition(Board board, String enPassantSquare, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, boolean whiteMovesNext, StringBuilder stringBuilder, ArrayList<Hash> hashTable, StringBuilder gameNotation, File file) {
+        stringBuilder.setLength(0);
+        //Get the board position currently
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                stringBuilder.append(board.getPiece(row, col));
+            }
+        }
+        stringBuilder.append(Objects.requireNonNullElse(enPassantSquare, "null"));
+        if (a1Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (h1Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (a8Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (h8Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (whiteMovesNext) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        String hash = stringBuilder.toString();
+        boolean exists = false;
+        for (Hash singleHash : hashTable) {
+            if (singleHash.getHashedPosition().equals(hash)) {
+                exists = true;
+                singleHash.increment();
+                if (singleHash.getCount() >= 3) {
+                    System.out.println("Draw by threefold repetition");
+                    gameNotation.append("1/2-1/2");
+                    System.out.println(gameNotation);
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter("GameCollection.txt", true))) {
+                        writer.newLine();
+                        writer.write(gameNotation.toString());
+                    } catch (IOException e) {
+                        System.out.println("Error");
+                    }
+                    //
+                    SelfStart();
+                }
+                break;
+            }
+        }
+        if (!exists) {
+            Hash newHash = new Hash(hash, 1);
+            hashTable.add(newHash);
+        }
+        return hashTable;
+    }
 }
