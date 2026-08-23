@@ -3,17 +3,19 @@ import java.util.*;
 import java.io.*;
 import Pieces.*;
 import GameState.*;
+import MachineLearning.*;
 
 import javax.print.DocFlavor;
 
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Welcome to chess. 1. Play against bot. 2. Bot plays against itself");
-        Scanner input = new Scanner(System.in);
-        int choice = input.nextInt();
-        if (choice == 1) Start();
-        else if (choice == 2) SelfStart();
+//        System.out.println("Welcome to chess. 1. Play against bot. 2. Bot plays against itself. 3. Train Model");
+//        Scanner input = new Scanner(System.in);
+//        int choice = input.nextInt();
+//        if (choice == 1) Start();
+//        else if (choice == 2) SelfStart();
+//        else if (choice == 3) TrainModel();
     }
 
     public static void Start() {
@@ -1644,7 +1646,6 @@ public class Main {
         }
         return gameState;
     }
-
     public static void SelfStart() {
         while (true) {
             //Create all the things to store in GameState
@@ -1681,7 +1682,7 @@ public class Main {
                 writer.write(gameState.getGameNotation().toString());
                 writer.newLine();
             } catch (IOException e) {
-                System.out.println("Error");
+                System.out.println("Error writing");
             }
 
         }
@@ -1971,5 +1972,317 @@ public class Main {
             }
             return gameState;
         }
+    }
+
+    public static void TrainModel() {
+        //Initially just testing an idea. Hence model has 3 parameters, and a depth of 1
+        //Instantiate models with temp values (real values will be read from files)
+        PlayingModel bestModel = new PlayingModel(0, 0, 0);
+        PlayingModel currentModel = new PlayingModel(0, 0, 0);
+        //Read in the best model so far from file
+        try (BufferedReader bestReader = new BufferedReader(new FileReader("BestModel.txt"))) {
+            String line;
+            while ((line = bestReader.readLine()) != null) {
+                String[] splitLine = line.split(" ");
+                switch (splitLine[0]) {
+                    case "QueenActivity":
+                        bestModel.setQueenActivity(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "RookActivity":
+                        bestModel.setRookActivity(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "PointsSurroundingKing":
+                        bestModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading best");
+        }
+        //Read in the current model being worked on
+        try (BufferedReader currentReader = new BufferedReader(new FileReader("CurrentModel.txt"))) {
+            String line;
+            while ((line = currentReader.readLine()) != null) {
+                String[] splitLine = line.split(" ");
+                switch (splitLine[0]) {
+                    case "QueenActivity":
+                        currentModel.setQueenActivity(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "RookActivity":
+                        currentModel.setRookActivity(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "PointsSurroundingKing":
+                        currentModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading current");
+        }
+        //During training, current model plays best many times, and average win/loss reward. If positive, update best as current (WIP solution)
+        //Reward formula = 100 * (0.9 ^ (Turns taken / 2)), negative for loss. Draw = 0 reward. (Idk if this works at all but it's a start)
+        //For now random move is best model
+        int noOfGamesToDetBetterModel = 10000; //Models play 10000 games, if one has a positive reward it (in theory) is better
+        int reward = 0;
+        //Set up game
+        //Play half of the games as white
+        for (int i = 0; i < noOfGamesToDetBetterModel/2; i++) {
+            //Set up variables for GameState
+            Board board = new Board();
+            boolean currentIsWhite = true;
+            String enPassantSquare = null;
+            ArrayList<String> whitePieces = new ArrayList<>();
+            whitePieces.add("a1");whitePieces.add("b1");whitePieces.add("c1");whitePieces.add("d1");whitePieces.add("e1");whitePieces.add("f1");whitePieces.add("g1");whitePieces.add("h1");whitePieces.add("a2");whitePieces.add("b2");whitePieces.add("c2");whitePieces.add("d2");whitePieces.add("e2");whitePieces.add("f2");whitePieces.add("g2");whitePieces.add("h2");
+            ArrayList<String> blackPieces = new ArrayList<>();
+            blackPieces.add("a7");blackPieces.add("b7");blackPieces.add("c7");blackPieces.add("d7");blackPieces.add("e7");blackPieces.add("f7");blackPieces.add("g7");blackPieces.add("h7");blackPieces.add("a8");blackPieces.add("b8");blackPieces.add("c8");blackPieces.add("d8");blackPieces.add("e8");blackPieces.add("f8");blackPieces.add("g8");blackPieces.add("h8");
+            StringBuilder stringBuilder = new StringBuilder();
+            boolean a1Castling = true;
+            boolean h1Castling = true;
+            boolean a8Castling = true;
+            boolean h8Castling = true;
+            int moveCount100 = 0;
+            ArrayList<Hash> hashTable = new ArrayList<>();
+            StringBuilder gameNotation = new StringBuilder();
+            int turnCounter = 0;
+            GameState gameState = new GameState(board, currentIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+            boolean finished = false;
+            //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
+            while (!finished) {
+                //Determine if white moves next (model) or black (random)
+                if (gameState.getPlayerIsWhite()) gameState = ModelMove(gameState, currentModel);
+                else gameState = SelfMove(gameState);
+                //Check for draw and checkmate
+                if (gameState.getWhiteWin()) {
+                    System.out.println("White (model) wins!");
+                    System.out.println(gameState.getGameNotation());
+                    finished = true;
+                    //Update reward. There will be number errors, but hopefully small enough to not impact the program too much
+                    //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
+                    //which wouldn't change the overall outcome of the model being better or worse
+                    reward += 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                }
+                else if (gameState.getBlackWin()) {
+                    System.out.println("Black (random) wins!");
+                    System.out.println(gameState.getGameNotation());
+                    finished = true;
+                    reward -= 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                }
+                else if (gameState.getStalemate()) {System.out.println("Stalemate!"); System.out.println(gameState.getGameNotation()); finished = true;}
+                else if (gameState.getMoveRule50()) {System.out.println("Draw by 50 move rule!"); System.out.println(gameState.getGameNotation()); finished = true;}
+                else if (gameState.getRepetitionDraw()) {System.out.println("Draw by repetition!"); System.out.println(gameState.getGameNotation()); finished = true;}
+            }
+        }
+    }
+
+    public static GameState ModelMove(GameState gameState, PlayingModel model) {
+        //Increment turn counter
+        gameState.setTurnCounter(gameState.getTurnCounter() + 1);
+        //Get all the required variables
+        Board board = gameState.getBoard();
+        boolean modelIsWhite = gameState.getPlayerIsWhite();
+        String enPassantSquare = gameState.getEnPassantSquare();
+        ArrayList<String> whitePieces = gameState.getWhitePieces();
+        ArrayList<String> blackPieces = gameState.getBlackPieces();
+        StringBuilder stringBuilder = gameState.getStringBuilder();
+        stringBuilder.setLength(0); //(Reset string builder)
+        boolean a1Castling = gameState.getA1Castling();
+        boolean h1Castling = gameState.getH1Castling();
+        boolean a8Castling = gameState.getA8Castling();
+        boolean h8Castling = gameState.getH8Castling();
+        int moveCount100 = gameState.getMoveCount100();
+        ArrayList<Hash> hashTable = gameState.getHashTable();
+        StringBuilder gameNotation = gameState.getGameNotation();
+        boolean captureMade = false;
+        char pieceSymbol = '0';
+        int turnCounter = gameState.getTurnCounter();
+        Square moveSquare;
+        Random random = new Random();
+        ArrayList<ModelEvaluation> positionValues = new ArrayList<>();
+        //Model needs to evaluate all next possible positions using the evaluation metrics, and pick position with highest score
+        //To get all possible next positions, we first get all the moves possibe
+        ArrayList<ArrayList<String>> allMoves =  AllMoves(board, !modelIsWhite, whitePieces, blackPieces, stringBuilder, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling);
+        //Now, for each possible move, we need to create a new board, simulate that move, and work out the corresponding model value
+        for (ArrayList<String> moveList : allMoves) {
+            //Get where piece is coming from and what piece
+            Square originSquare = StringToSquare(moveList.get(0));
+            char tempPieceSymbol = board.getPiece(originSquare.getRow(), originSquare.getCol());
+            for (int i = 1; i < moveList.size(); i++) {
+                Board tempBoard = CopyBoard(board);
+                //If computer picked castling
+                if (moveList.get(i).equals("O-O") || moveList.get(i).equals("O-O-O")) {
+                    String computerMove = moveList.get(i);
+                    ArrayList<String> newWhitePieces = new ArrayList<>();
+                    ArrayList<String> newBlackPieces = new ArrayList<>();
+                    if (modelIsWhite) {
+                        newBlackPieces.addAll(blackPieces);
+                        boolean tempA1Castling = false;
+                        boolean tempH1Castling = false;
+                        boolean tempKingsideCaslting = false;
+                        if (computerMove.equals("O-O")) tempKingsideCaslting = true;
+                        int pieceIndex = 0;
+                        if (tempKingsideCaslting) {
+                            for (String piece : whitePieces) {
+                                if (!piece.equals("e1") && !piece.equals("h1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(0, 7, '.');
+                            tempBoard.setPiece(0, 6, 'K');
+                            tempBoard.setPiece(0, 5, 'R');
+                            tempBoard.setPiece(0, 4, '.');
+                            newWhitePieces.add("f1");
+                            newWhitePieces.add("g1");
+                        } else {
+                            for (String piece : whitePieces) {
+                                if (!piece.equals("e1") && !piece.equals("a1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(0, 4, '.');
+                            tempBoard.setPiece(0, 2, 'K');
+                            tempBoard.setPiece(0, 3, 'R');
+                            tempBoard.setPiece(0, 1, '.');
+                            tempBoard.setPiece(0, 0, '.');
+                            newWhitePieces.add("c1");
+                            newWhitePieces.add("d1");
+                        }
+                    }
+                    else {
+                        newWhitePieces.addAll(whitePieces);
+                        boolean tempA8Castling = false;
+                        boolean tempH8Castling = false;
+                        boolean tempKingsideCaslting = false;
+                        if (computerMove.equals("O-O")) tempKingsideCaslting = true;
+                        int pieceIndex = 0;
+                        if (tempKingsideCaslting) {
+                            for (String piece : blackPieces) {
+                                if (!piece.equals("e8") && !piece.equals("h8")) newBlackPieces.add(blackPieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(7, 7, '.');
+                            tempBoard.setPiece(7, 6, 'k');
+                            tempBoard.setPiece(7, 5, 'r');
+                            tempBoard.setPiece(7, 4, '.');
+                            newBlackPieces.add("f8");
+                            newBlackPieces.add("g8");
+                        } else {
+                            for (String piece : blackPieces) {
+                                if (!piece.equals("a8") && !piece.equals("e8")) newBlackPieces.add(blackPieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(7, 4, '.');
+                            tempBoard.setPiece(7, 2, 'k');
+                            tempBoard.setPiece(7, 3, 'r');
+                            tempBoard.setPiece(7, 1, '.');
+                            tempBoard.setPiece(7, 0, '.');
+                            newBlackPieces.add("c8");
+                            newBlackPieces.add("d8");
+                        }
+                    }
+                }
+                //If non castling move picked
+                else {
+                    ArrayList<String> newWhitePieces = new ArrayList<>();
+                    ArrayList<String> newBlackPieces = new ArrayList<>();
+                    newWhitePieces.addAll(whitePieces);
+                    newBlackPieces.addAll(blackPieces);
+                    String originSquareString = moveList.get(0);
+                    String destinationSquareString = moveList.get(i);
+                    moveSquare = StringToSquare(destinationSquareString);
+
+                    //If white piece captured
+                    if (Character.isUpperCase(tempBoard.getPiece(moveSquare.getRow(), moveSquare.getCol()))) {
+                        newWhitePieces.remove(destinationSquareString);
+                        captureMade = true;
+                    }
+                    //If black piece captured
+                    else if (Character.isLowerCase(tempBoard.getPiece(moveSquare.getRow(), moveSquare.getCol()))) {
+                        newBlackPieces.remove(destinationSquareString);
+                        captureMade = true;
+                    }
+                    //Update enPassantSquare
+                    String tempEnPassantSquare = enPassantSquare;
+                    if (tempBoard.getPiece(originSquare.getRow(), originSquare.getCol()) == 'P' && originSquare.getRow() == 1 && moveSquare.getRow() == 3)
+                        tempEnPassantSquare = CoordinateToString(2, originSquare.getCol(), stringBuilder);
+                    else if (tempBoard.getPiece(originSquare.getRow(), originSquare.getCol()) == 'p' && originSquare.getRow() == 6 && moveSquare.getRow() == 4)
+                        tempEnPassantSquare = CoordinateToString(5, originSquare.getCol(), stringBuilder);
+                    else tempEnPassantSquare = null;
+                    //Update castling rights
+                    boolean tempA1Castling = a1Castling;
+                    boolean tempH1Castling = h1Castling;
+                    boolean tempA8Castling = a8Castling;
+                    boolean tempH8Castling = h8Castling;
+                    if (tempBoard.getPiece(originSquare.getRow(), originSquare.getCol()) == 'K') {
+                        tempA1Castling = false;
+                        tempH1Castling = false;
+                    } else if (board.getPiece(originSquare.getRow(), originSquare.getCol()) == 'k') {
+                        tempA8Castling = false;
+                        tempH8Castling = false;
+                    } else if (originSquare.getRow() == 0 && originSquare.getCol() == 0) tempA1Castling = false;
+                    else if (originSquare.getRow() == 0 && originSquare.getCol() == 7) tempH1Castling = false;
+                    else if (originSquare.getRow() == 7 && originSquare.getCol() == 0) tempA8Castling = false;
+                    else if (originSquare.getRow() == 7 && originSquare.getCol() == 7) tempH8Castling = false;
+                    else if (destinationSquareString.equals("a1")) tempA1Castling = false;
+                    else if (destinationSquareString.equals("h1")) tempH1Castling = false;
+                    else if (destinationSquareString.equals("a8")) tempA8Castling = false;
+                    else if (destinationSquareString.equals("h8")) tempH8Castling = false;
+                    //Make move
+                    tempPieceSymbol = tempBoard.getPiece(originSquare.getRow(), originSquare.getCol());
+                    tempBoard.setPiece(originSquare.getRow(), originSquare.getCol(), '.');
+                    tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), tempPieceSymbol);
+                    //Update whitePieces + blackPieces
+                    int pieceCount = 0;
+                    if (!modelIsWhite) {
+                        for (String piece : newBlackPieces) {
+                            if (piece.equals(originSquareString)) break;
+                            else pieceCount++;
+                        }
+                        newBlackPieces.remove(pieceCount);
+                        newBlackPieces.add(destinationSquareString);
+                    } else {
+                        for (String piece : newWhitePieces) {
+                            if (piece.equals(originSquareString)) break;
+                            else pieceCount++;
+                        }
+                        whitePieces.remove(pieceCount);
+                        whitePieces.add(destinationSquareString);
+                    }
+                    //Handle Promotion
+                    if ((pieceSymbol == 'P' && moveSquare.getRow() == 7) || (pieceSymbol == 'p' && moveSquare.getRow() == 0)) {
+                        char[] promotionOptions = {'Q', 'R', 'B', 'N'};
+                        for (char piece : promotionOptions) {
+                            Board tempTempBoard = CopyBoard(tempBoard);
+                            char newPiece = piece;
+                            if (modelIsWhite) tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), newPiece);
+                            else tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(newPiece));
+                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i));
+                        }
+                    }
+                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i));
+                }
+            }
+        }
+        //By now the positionValues list has all the next moves, and their associated cost
+        double highest = 0;
+        String originSquare = null;
+        String destinationSquare = null;
+        for (ModelEvaluation positionValue : positionValues) {
+            if (positionValue.getScore() > highest) highest = positionValue.getScore();
+        }
+        for (ModelEvaluation positionValue : positionValues) {
+            if (positionValue.getScore() == highest) {
+                originSquare = positionValue.getOriginSquare();
+                destinationSquare = positionValue.getDestinationSquare();
+            }
+        }
+        //Now we repeat the same thing (Yippee)
+
+
+
+
+        return gameState;
+    }
+
+    public static void CalculateScoreOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, ArrayList<ModelEvaluation> positionValues, String originString, String destinationString){
+        double score = 0;
+        ModelEvaluation positionValue = new ModelEvaluation(originString, destinationString, score);
     }
 }

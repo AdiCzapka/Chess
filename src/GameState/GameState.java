@@ -1,8 +1,6 @@
 package GameState;
 import Board.*;
 import java.util.*;
-import java.io.*;
-import Pieces.*;
 
 
 public class GameState {
