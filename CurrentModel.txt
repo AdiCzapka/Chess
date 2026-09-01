@@ -1,3 +1,3 @@
-QueenActivity 0.5
-RookActivity 0.5
-PointsSurroundingKing 0.5
+QueenActivity 0.1
+RookActivity 0.1
+PointsSurroundingKing 0.1

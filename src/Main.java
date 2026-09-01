@@ -16,6 +16,10 @@ public class Main {
 //        if (choice == 1) Start();
 //        else if (choice == 2) SelfStart();
 //        else if (choice == 3) TrainModel();
+        Random rand = new Random();
+        for (int i = 0; i < 100; i++) {
+            System.out.println(rand.nextBoolean());
+        }
     }
 
     public static void Start() {
@@ -1975,101 +1979,276 @@ public class Main {
     }
 
     public static void TrainModel() {
-        //Initially just testing an idea. Hence model has 3 parameters, and a depth of 1
-        //Instantiate models with temp values (real values will be read from files)
-        PlayingModel bestModel = new PlayingModel(0, 0, 0);
-        PlayingModel currentModel = new PlayingModel(0, 0, 0);
-        //Read in the best model so far from file
-        try (BufferedReader bestReader = new BufferedReader(new FileReader("BestModel.txt"))) {
-            String line;
-            while ((line = bestReader.readLine()) != null) {
-                String[] splitLine = line.split(" ");
-                switch (splitLine[0]) {
-                    case "QueenActivity":
-                        bestModel.setQueenActivity(Double.parseDouble(splitLine[1]));
-                        break;
-                    case "RookActivity":
-                        bestModel.setRookActivity(Double.parseDouble(splitLine[1]));
-                        break;
-                    case "PointsSurroundingKing":
-                        bestModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
-                        break;
+        while (true) {
+            //Initially just testing an idea. Hence model has 3 parameters, and a depth of 1
+            //Instantiate models with temp values (real values will be read from files)
+            PlayingModel bestModel = new PlayingModel(0, 0, 0);
+            PlayingModel currentModel = new PlayingModel(0, 0, 0);
+            //Read in the best model so far from file
+            try (BufferedReader bestReader = new BufferedReader(new FileReader("BestModel.txt"))) {
+                String line;
+                while ((line = bestReader.readLine()) != null) {
+                    String[] splitLine = line.split(" ");
+                    switch (splitLine[0]) {
+                        case "QueenActivity":
+                            bestModel.setQueenActivity(Double.parseDouble(splitLine[1]));
+                            break;
+                        case "RookActivity":
+                            bestModel.setRookActivity(Double.parseDouble(splitLine[1]));
+                            break;
+                        case "PointsSurroundingKing":
+                            bestModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
+                            break;
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading best");
+            }
+            //Read in the current model being worked on
+            try (BufferedReader currentReader = new BufferedReader(new FileReader("CurrentModel.txt"))) {
+                String line;
+                while ((line = currentReader.readLine()) != null) {
+                    String[] splitLine = line.split(" ");
+                    switch (splitLine[0]) {
+                        case "QueenActivity":
+                            currentModel.setQueenActivity(Double.parseDouble(splitLine[1]));
+                            break;
+                        case "RookActivity":
+                            currentModel.setRookActivity(Double.parseDouble(splitLine[1]));
+                            break;
+                        case "PointsSurroundingKing":
+                            currentModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
+                            break;
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading current");
+            }
+            //During training, current model plays best many times, and average win/loss reward. If positive, update best as current (WIP solution)
+            //Reward formula = 100 * (0.9 ^ (Turns taken / 2)), negative for loss. Draw = 0 reward. (Idk if this works at all but it's a start)
+            //For now random move is best model
+            int noOfGamesToDetBetterModel = 10000; //Models play 10000 games, if one has a positive reward it (in theory) is better
+            int reward = 0;
+            //Set up game
+            //Play half of the games as white
+            for (int i = 0; i < noOfGamesToDetBetterModel / 2; i++) {
+                //Set up variables for GameState
+                Board board = new Board();
+                boolean whiteTurn = true;
+                String enPassantSquare = null;
+                ArrayList<String> whitePieces = new ArrayList<>();
+                whitePieces.add("a1");
+                whitePieces.add("b1");
+                whitePieces.add("c1");
+                whitePieces.add("d1");
+                whitePieces.add("e1");
+                whitePieces.add("f1");
+                whitePieces.add("g1");
+                whitePieces.add("h1");
+                whitePieces.add("a2");
+                whitePieces.add("b2");
+                whitePieces.add("c2");
+                whitePieces.add("d2");
+                whitePieces.add("e2");
+                whitePieces.add("f2");
+                whitePieces.add("g2");
+                whitePieces.add("h2");
+                ArrayList<String> blackPieces = new ArrayList<>();
+                blackPieces.add("a7");
+                blackPieces.add("b7");
+                blackPieces.add("c7");
+                blackPieces.add("d7");
+                blackPieces.add("e7");
+                blackPieces.add("f7");
+                blackPieces.add("g7");
+                blackPieces.add("h7");
+                blackPieces.add("a8");
+                blackPieces.add("b8");
+                blackPieces.add("c8");
+                blackPieces.add("d8");
+                blackPieces.add("e8");
+                blackPieces.add("f8");
+                blackPieces.add("g8");
+                blackPieces.add("h8");
+                StringBuilder stringBuilder = new StringBuilder();
+                boolean a1Castling = true;
+                boolean h1Castling = true;
+                boolean a8Castling = true;
+                boolean h8Castling = true;
+                int moveCount100 = 0;
+                ArrayList<Hash> hashTable = new ArrayList<>();
+                StringBuilder gameNotation = new StringBuilder();
+                int turnCounter = 0;
+                GameState gameState = new GameState(board, whiteTurn, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                boolean finished = false;
+                //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
+                while (!finished) {
+                    //Determine if white moves next (model) or black (random)
+                    if (gameState.getPlayerIsWhite()) gameState = ModelMove(gameState, currentModel);
+                    else gameState = SelfMove(gameState);
+                    //Check for draw and checkmate
+                    if (gameState.getWhiteWin()) {
+                        System.out.println("White (model) wins!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                        //Update reward. There will be number errors, but hopefully small enough to not impact the program too much
+                        //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
+                        //which wouldn't change the overall outcome of the model being better or worse
+                        reward += 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                    } else if (gameState.getBlackWin()) {
+                        System.out.println("Black (random) wins!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                        reward -= 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                    } else if (gameState.getStalemate()) {
+                        System.out.println("Stalemate!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                    } else if (gameState.getMoveRule50()) {
+                        System.out.println("Draw by 50 move rule!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                    } else if (gameState.getRepetitionDraw()) {
+                        System.out.println("Draw by repetition!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                    }
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Error reading best");
-        }
-        //Read in the current model being worked on
-        try (BufferedReader currentReader = new BufferedReader(new FileReader("CurrentModel.txt"))) {
-            String line;
-            while ((line = currentReader.readLine()) != null) {
-                String[] splitLine = line.split(" ");
-                switch (splitLine[0]) {
-                    case "QueenActivity":
-                        currentModel.setQueenActivity(Double.parseDouble(splitLine[1]));
-                        break;
-                    case "RookActivity":
-                        currentModel.setRookActivity(Double.parseDouble(splitLine[1]));
-                        break;
-                    case "PointsSurroundingKing":
-                        currentModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
-                        break;
+            //Now play half as black
+            for (int i = 0; i < noOfGamesToDetBetterModel / 2; i++) {
+                //Set up variables for GameState
+                Board board = new Board();
+                boolean whiteTurn = true;
+                String enPassantSquare = null;
+                ArrayList<String> whitePieces = new ArrayList<>();
+                whitePieces.add("a1");
+                whitePieces.add("b1");
+                whitePieces.add("c1");
+                whitePieces.add("d1");
+                whitePieces.add("e1");
+                whitePieces.add("f1");
+                whitePieces.add("g1");
+                whitePieces.add("h1");
+                whitePieces.add("a2");
+                whitePieces.add("b2");
+                whitePieces.add("c2");
+                whitePieces.add("d2");
+                whitePieces.add("e2");
+                whitePieces.add("f2");
+                whitePieces.add("g2");
+                whitePieces.add("h2");
+                ArrayList<String> blackPieces = new ArrayList<>();
+                blackPieces.add("a7");
+                blackPieces.add("b7");
+                blackPieces.add("c7");
+                blackPieces.add("d7");
+                blackPieces.add("e7");
+                blackPieces.add("f7");
+                blackPieces.add("g7");
+                blackPieces.add("h7");
+                blackPieces.add("a8");
+                blackPieces.add("b8");
+                blackPieces.add("c8");
+                blackPieces.add("d8");
+                blackPieces.add("e8");
+                blackPieces.add("f8");
+                blackPieces.add("g8");
+                blackPieces.add("h8");
+                StringBuilder stringBuilder = new StringBuilder();
+                boolean a1Castling = true;
+                boolean h1Castling = true;
+                boolean a8Castling = true;
+                boolean h8Castling = true;
+                int moveCount100 = 0;
+                ArrayList<Hash> hashTable = new ArrayList<>();
+                StringBuilder gameNotation = new StringBuilder();
+                int turnCounter = 0;
+                GameState gameState = new GameState(board, whiteTurn, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                boolean finished = false;
+                //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
+                while (!finished) {
+                    //Determine if white moves next (model) or black (random)
+                    if (gameState.getPlayerIsWhite()) gameState = SelfMove(gameState);
+                    else gameState = ModelMove(gameState, currentModel);
+                    //Check for draw and checkmate
+                    if (gameState.getWhiteWin()) {
+                        System.out.println("White (model) wins!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                        //Update reward. There will be number errors, but hopefully small enough to not impact the program too much
+                        //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
+                        //which wouldn't change the overall outcome of the model being better or worse
+                        reward += 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                    } else if (gameState.getBlackWin()) {
+                        System.out.println("Black (random) wins!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                        reward -= 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                    } else if (gameState.getStalemate()) {
+                        System.out.println("Stalemate!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                    } else if (gameState.getMoveRule50()) {
+                        System.out.println("Draw by 50 move rule!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                    } else if (gameState.getRepetitionDraw()) {
+                        System.out.println("Draw by repetition!");
+                        System.out.println(gameState.getGameNotation());
+                        finished = true;
+                    }
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Error reading current");
-        }
-        //During training, current model plays best many times, and average win/loss reward. If positive, update best as current (WIP solution)
-        //Reward formula = 100 * (0.9 ^ (Turns taken / 2)), negative for loss. Draw = 0 reward. (Idk if this works at all but it's a start)
-        //For now random move is best model
-        int noOfGamesToDetBetterModel = 10000; //Models play 10000 games, if one has a positive reward it (in theory) is better
-        int reward = 0;
-        //Set up game
-        //Play half of the games as white
-        for (int i = 0; i < noOfGamesToDetBetterModel/2; i++) {
-            //Set up variables for GameState
-            Board board = new Board();
-            boolean currentIsWhite = true;
-            String enPassantSquare = null;
-            ArrayList<String> whitePieces = new ArrayList<>();
-            whitePieces.add("a1");whitePieces.add("b1");whitePieces.add("c1");whitePieces.add("d1");whitePieces.add("e1");whitePieces.add("f1");whitePieces.add("g1");whitePieces.add("h1");whitePieces.add("a2");whitePieces.add("b2");whitePieces.add("c2");whitePieces.add("d2");whitePieces.add("e2");whitePieces.add("f2");whitePieces.add("g2");whitePieces.add("h2");
-            ArrayList<String> blackPieces = new ArrayList<>();
-            blackPieces.add("a7");blackPieces.add("b7");blackPieces.add("c7");blackPieces.add("d7");blackPieces.add("e7");blackPieces.add("f7");blackPieces.add("g7");blackPieces.add("h7");blackPieces.add("a8");blackPieces.add("b8");blackPieces.add("c8");blackPieces.add("d8");blackPieces.add("e8");blackPieces.add("f8");blackPieces.add("g8");blackPieces.add("h8");
+            //Now that the model has played 10000 games against the previous best implementation, we check if it has a positive reward (and is therefore better)
+            if (reward > 0) {
+                StringBuilder stringBuilder = new StringBuilder();
+                try (BufferedReader currentReader = new BufferedReader(new FileReader("CurrentModel.txt"))) {
+                    String line;
+                    while ((line = currentReader.readLine()) != null) {
+                        stringBuilder.append(line + "\n");
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error reading current when trying to write to best");
+                }
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                try (BufferedWriter bestWriter = new BufferedWriter(new FileWriter("BestModel.txt"))) {
+                    bestWriter.write(stringBuilder.toString());
+                } catch (IOException e) {
+                    System.out.println("Error writing");
+                }
+            }
+            //Now we need to change the current model slightly to play against the best model again
+            //For now, pick random field to change by a random double +-
+            Random random = new Random();
+            int parameterChangeIndex = random.nextInt(3);
+            double randomChangeValue = random.nextDouble();
+            int multiplier = 1;
+            if (random.nextBoolean()) {
+                multiplier = -1;
+            }
+            switch (parameterChangeIndex) {
+                case 0:
+                    currentModel.setQueenActivity(currentModel.getQueenActivity() + (multiplier * randomChangeValue));
+                    break;
+                case 1:
+                    currentModel.setRookActivity(currentModel.getRookActivity() + (multiplier * randomChangeValue));
+                    break;
+                case 2:
+                    currentModel.setPointsSurroundingKing(currentModel.getPointsSurroundingKing() + (multiplier * randomChangeValue));
+                    break;
+                default:
+                    System.out.println("Invalid parameter");
+            }
+            //Now we save the changes of the current parameter to the file
             StringBuilder stringBuilder = new StringBuilder();
-            boolean a1Castling = true;
-            boolean h1Castling = true;
-            boolean a8Castling = true;
-            boolean h8Castling = true;
-            int moveCount100 = 0;
-            ArrayList<Hash> hashTable = new ArrayList<>();
-            StringBuilder gameNotation = new StringBuilder();
-            int turnCounter = 0;
-            GameState gameState = new GameState(board, currentIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
-            boolean finished = false;
-            //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
-            while (!finished) {
-                //Determine if white moves next (model) or black (random)
-                if (gameState.getPlayerIsWhite()) gameState = ModelMove(gameState, currentModel);
-                else gameState = SelfMove(gameState);
-                //Check for draw and checkmate
-                if (gameState.getWhiteWin()) {
-                    System.out.println("White (model) wins!");
-                    System.out.println(gameState.getGameNotation());
-                    finished = true;
-                    //Update reward. There will be number errors, but hopefully small enough to not impact the program too much
-                    //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
-                    //which wouldn't change the overall outcome of the model being better or worse
-                    reward += 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
-                }
-                else if (gameState.getBlackWin()) {
-                    System.out.println("Black (random) wins!");
-                    System.out.println(gameState.getGameNotation());
-                    finished = true;
-                    reward -= 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
-                }
-                else if (gameState.getStalemate()) {System.out.println("Stalemate!"); System.out.println(gameState.getGameNotation()); finished = true;}
-                else if (gameState.getMoveRule50()) {System.out.println("Draw by 50 move rule!"); System.out.println(gameState.getGameNotation()); finished = true;}
-                else if (gameState.getRepetitionDraw()) {System.out.println("Draw by repetition!"); System.out.println(gameState.getGameNotation()); finished = true;}
+            stringBuilder.append("QueenActivity " + currentModel.getQueenActivity() + "\n");
+            stringBuilder.append("RookActivity " + currentModel.getRookActivity() + "\n");
+            stringBuilder.append("PointsSurroundingKing " + currentModel.getPointsSurroundingKing());
+            try (BufferedWriter currentWriter = new BufferedWriter(new FileWriter("CurrentModel.txt"))) {
+                currentWriter.write(stringBuilder.toString());
+            } catch (IOException e) {
+                System.out.println("Error writing to current");
             }
         }
     }
@@ -2177,6 +2356,7 @@ public class Main {
                             newBlackPieces.add("d8");
                         }
                     }
+                    CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model);
                 }
                 //If non castling move picked
                 else {
@@ -2228,7 +2408,7 @@ public class Main {
                     tempPieceSymbol = tempBoard.getPiece(originSquare.getRow(), originSquare.getCol());
                     tempBoard.setPiece(originSquare.getRow(), originSquare.getCol(), '.');
                     tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), tempPieceSymbol);
-                    //Update whitePieces + blackPieces
+                    //Update newWhitePieces + newBlackPieces
                     int pieceCount = 0;
                     if (!modelIsWhite) {
                         for (String piece : newBlackPieces) {
@@ -2253,36 +2433,344 @@ public class Main {
                             char newPiece = piece;
                             if (modelIsWhite) tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), newPiece);
                             else tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(newPiece));
-                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i));
+                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), piece, model);
                         }
                     }
-                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i));
+                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model);
                 }
             }
         }
+
+
         //By now the positionValues list has all the next moves, and their associated cost
-        double highest = 0;
+        //Model needs to pick a move to play based on the evaluation. Each move has probability of being picked equal to score^2 / Sum of all (possible move^2)
+        double total = 0;
+        for (ModelEvaluation positionValue : positionValues) {
+            total += Math.pow(positionValue.getScore(), 2);
+        }
+        double randomMove = random.nextDouble(total);
+        //Now we decide which move that was (similarly to the computer making random moves)
         String originSquare = null;
         String destinationSquare = null;
+        int moveIndex = 0;
         for (ModelEvaluation positionValue : positionValues) {
-            if (positionValue.getScore() > highest) highest = positionValue.getScore();
-        }
-        for (ModelEvaluation positionValue : positionValues) {
-            if (positionValue.getScore() == highest) {
-                originSquare = positionValue.getOriginSquare();
-                destinationSquare = positionValue.getDestinationSquare();
+            if (total < Math.pow(positionValue.getScore(), 2)) break;
+            else {
+                total -= Math.pow(positionValue.getScore(), 2);
+                moveIndex++;
             }
         }
-        //Now we repeat the same thing (Yippee)
+        //The move chosen is the positionValue at position movenNdex in positionValues
+        String originSquareString = null;
+        String destinationSquareString = null;
+
+        //If computer picked castling
+        if (positionValues.get(moveIndex).getDestinationSquare().equals("O-O") || positionValues.get(moveIndex).getDestinationSquare().equals("O-O-O")) {
+            String computerMove = positionValues.get(moveIndex).getDestinationSquare();
+            ArrayList<String> newWhitePieces = new ArrayList<>();
+            ArrayList<String> newBlackPieces = new ArrayList<>();
+            if (modelIsWhite) {
+                newBlackPieces.addAll(blackPieces);
+                a1Castling = false;
+                h1Castling = false;
+                boolean kingsideCaslting = false;
+                if (computerMove.equals("O-O")) kingsideCaslting = true;
+                int pieceIndex = 0;
+                if (kingsideCaslting) {
+                    for (String piece : whitePieces) {
+                        if (!piece.equals("e1") && !piece.equals("h1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                        pieceIndex++;
+                    }
+                    board.setPiece(0, 7, '.');
+                    board.setPiece(0, 6, 'K');
+                    board.setPiece(0, 5, 'R');
+                    board.setPiece(0, 4, '.');
+                    newWhitePieces.add("f1");
+                    newWhitePieces.add("g1");
+                    moveSquare = new Square(0,6);
+                } else {
+                    for (String piece : whitePieces) {
+                        if (!piece.equals("e1") && !piece.equals("a1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                        pieceIndex++;
+                    }
+                    board.setPiece(0, 4, '.');
+                    board.setPiece(0, 2, 'K');
+                    board.setPiece(0, 3, 'R');
+                    board.setPiece(0, 1, '.');
+                    board.setPiece(0, 0, '.');
+                    newWhitePieces.add("c1");
+                    newWhitePieces.add("d1");
+                    moveSquare = new Square(0,2);
+                }
+            }
+            else {
+                newWhitePieces.addAll(whitePieces);
+                a8Castling = false;
+                h8Castling = false;
+                boolean kingsideCaslting = false;
+                if (computerMove.equals("O-O")) kingsideCaslting = true;
+                int pieceIndex = 0;
+                if (kingsideCaslting) {
+                    for (String piece : blackPieces) {
+                        if (!piece.equals("e8") && !piece.equals("h8")) newBlackPieces.add(blackPieces.get(pieceIndex));
+                        pieceIndex++;
+                    }
+                    board.setPiece(7, 7, '.');
+                    board.setPiece(7, 6, 'k');
+                    board.setPiece(7, 5, 'r');
+                    board.setPiece(7, 4, '.');
+                    newBlackPieces.add("f8");
+                    newBlackPieces.add("g8");
+                    moveSquare = new Square(7,6);
+                } else {
+                    for (String piece : blackPieces) {
+                        if (!piece.equals("a8") && !piece.equals("e8")) newBlackPieces.add(blackPieces.get(pieceIndex));
+                        pieceIndex++;
+                    }
+                    board.setPiece(7, 4, '.');
+                    board.setPiece(7, 2, 'k');
+                    board.setPiece(7, 3, 'r');
+                    board.setPiece(7, 1, '.');
+                    board.setPiece(7, 0, '.');
+                    newBlackPieces.add("c8");
+                    newBlackPieces.add("d8");
+                    moveSquare = new Square(7,2);
+                }
+            }
+        }
+        //If non castling move picked
+        else {
+            originSquareString = positionValues.get(moveIndex).getOriginSquare();
+            destinationSquareString = positionValues.get(moveIndex).getDestinationSquare();
+            Square toBeMoved = StringToSquare(originSquareString);
+            moveSquare = StringToSquare(destinationSquareString);
+
+            //If white piece captured
+            if (Character.isUpperCase(board.getPiece(moveSquare.getRow(), moveSquare.getCol()))) {
+                whitePieces.remove(destinationSquare);
+                captureMade = true;
+            }
+            //If black piece captured
+            else if (Character.isLowerCase(board.getPiece(moveSquare.getRow(), moveSquare.getCol()))) {
+                blackPieces.remove(destinationSquare);
+                captureMade = true;
+            }
+            //Update enPassantSquare
+            if (board.getPiece(toBeMoved.getRow(), toBeMoved.getCol()) == 'P' && toBeMoved.getRow() == 1 && moveSquare.getRow() == 3)
+                enPassantSquare = CoordinateToString(2, toBeMoved.getCol(), stringBuilder);
+            else if (board.getPiece(toBeMoved.getRow(), toBeMoved.getCol()) == 'p' && toBeMoved.getRow() == 6 && moveSquare.getRow() == 4)
+                enPassantSquare = CoordinateToString(5, toBeMoved.getCol(), stringBuilder);
+            else enPassantSquare = null;
+            //Update castling rights
+            if (board.getPiece(toBeMoved.getRow(), toBeMoved.getCol()) == 'K') {
+                a1Castling = false;
+                h1Castling = false;
+            } else if (board.getPiece(toBeMoved.getRow(), toBeMoved.getCol()) == 'k') {
+                a8Castling = false;
+                h8Castling = false;
+            } else if (toBeMoved.getRow() == 0 && toBeMoved.getCol() == 0) a1Castling = false;
+            else if (toBeMoved.getRow() == 0 && toBeMoved.getCol() == 7) h1Castling = false;
+            else if (toBeMoved.getRow() == 7 && toBeMoved.getCol() == 0) a8Castling = false;
+            else if (toBeMoved.getRow() == 7 && toBeMoved.getCol() == 7) h8Castling = false;
+            else if (destinationSquare.equals("a1")) a1Castling = false;
+            else if (destinationSquare.equals("h1")) h1Castling = false;
+            else if (destinationSquare.equals("a8")) a8Castling = false;
+            else if (destinationSquare.equals("h8")) h8Castling = false;
+            //Make move
+            pieceSymbol = board.getPiece(toBeMoved.getRow(), toBeMoved.getCol());
+            board.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
+            board.setPiece(moveSquare.getRow(), moveSquare.getCol(), pieceSymbol);
+            //Update whitePieces + blackPieces
+            int pieceCount = 0;
+            if (!modelIsWhite) {
+                for (String piece : blackPieces) {
+                    if (piece.equals(originSquare)) break;
+                    else pieceCount++;
+                }
+                blackPieces.remove(pieceCount);
+                blackPieces.add(destinationSquare);
+            } else {
+                for (String piece : whitePieces) {
+                    if (piece.equals(originSquare)) break;
+                    else pieceCount++;
+                }
+                whitePieces.remove(pieceCount);
+                whitePieces.add(destinationSquare);
+            }
+            //Handle Promotion
+            if ((pieceSymbol == 'P' && moveSquare.getRow() == 7) || (pieceSymbol == 'p' && moveSquare.getRow() == 0)) {
+                char newPiece = positionValues.get(moveIndex).getPiecePromotionSymbol();
+                if (modelIsWhite) board.setPiece(moveSquare.getRow(), moveSquare.getCol(), newPiece);
+                else board.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(newPiece));
+                gameNotation.append("=" + newPiece + " ");
+
+            }
+
+        }
+        //Check opponent has legal moves. If not, checkmate/stalemate
+        ArrayList<ArrayList<String>> opponentMoves = AllMoves(board, !modelIsWhite, whitePieces, blackPieces, stringBuilder, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling);
+        boolean movesAvailable = false;
+        for (ArrayList<String> moveList : opponentMoves) {
+            if (moveList.size() > 1) {
+                movesAvailable = true;
+                break;
+            }
+        }
+        //Reassign needed variables in gameState (those that don't change automatically)
+        gameState.setEnPassantSquare(enPassantSquare);
+        gameState.setA1Castling(a1Castling);
+        gameState.setH1Castling(h1Castling);
+        gameState.setA8Castling(a8Castling);
+        gameState.setH8Castling(h8Castling);
 
 
+        //50 move rule
+        moveCount100++;
+        if (!positionValues.get(moveIndex).getDestinationSquare().equals("O-O") || !positionValues.get(moveIndex).getDestinationSquare().equals("O-O-O")) {
+            if (captureMade) moveCount100 = 0;
+            else if (pieceSymbol == ('p' | 'P')) moveCount100 = 0;
+        }
+        if (moveCount100 >= 100) {
+            gameState.setMoveRule50(true);
+            return gameState;
+        }
+        gameState.setMoveCount100(moveCount100);
 
-
-        return gameState;
+        //Check 3-fold repetition
+        gameState = SelfHashPosition(gameState);
+        //Done after as SelfHashPosition still uses old playerIsWhite to determine which colour goes next
+        gameState.setPlayerIsWhite(!modelIsWhite);
+        //If moves are available, pass onto player to make their move
+        if (movesAvailable) return gameState;
+        else {
+            boolean checkmate = CheckIfCheckmate(board, whitePieces, blackPieces, moveSquare, stringBuilder);
+            if (checkmate) {
+                if (modelIsWhite) {gameState.setWhiteWin(true);}
+                else {gameState.setBlackWin(true);}
+            }
+            else {
+                gameState.setStalemate(true);
+            }
+            return gameState;
+        }
     }
-
-    public static void CalculateScoreOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, ArrayList<ModelEvaluation> positionValues, String originString, String destinationString){
+    public static void CalculateScoreOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, ArrayList<ModelEvaluation> positionValues, String originString, String destinationString, char piecePromotionSymbol, PlayingModel model){
         double score = 0;
-        ModelEvaluation positionValue = new ModelEvaluation(originString, destinationString, score);
+        //Calculate the score of the position
+        double queenScore = CalculateQueenActivity(board, modelIsWhite, whitePieces, blackPieces);
+        double rookScore = CalculateRookActivity(board, modelIsWhite, whitePieces, blackPieces);
+        double surroundKingPointScore = CalculatePointsSurroundingKing(board, modelIsWhite, whitePieces, blackPieces);
+        //Calculate score for position
+        score = (model.getQueenActivity()*queenScore) + (model.getRookActivity()*rookScore) + (model.getPointsSurroundingKing()*surroundKingPointScore);
+        ModelEvaluation positionValue = new ModelEvaluation(originString, destinationString, score, piecePromotionSymbol);
+        positionValues.add(positionValue);
+
+    }
+    public static double CalculateQueenActivity(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces) {
+        //Find square that queen is on. Add to move total. Return total
+        int score = 0;
+        StringBuilder stringBuilder = new StringBuilder();
+        if (modelIsWhite) {
+            for (String piece : whitePieces) {
+                Square queenSquare = StringToSquare(piece);
+                if (board.getPiece(queenSquare.getRow(), queenSquare.getCol()) == 'Q') {score += QueenAttacks(board, piece, stringBuilder).size();}
+            }
+        }
+        else {
+            for (String piece : blackPieces) {
+                Square queenSquare = StringToSquare(piece);
+                if (board.getPiece(queenSquare.getRow(), queenSquare.getCol()) == 'q') {score += QueenAttacks(board, piece, stringBuilder).size();}
+            }
+        }
+        return score;
+    }
+    public static double CalculateRookActivity(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces) {
+        //Same for rooks
+        int score = 0;
+        StringBuilder stringBuilder = new StringBuilder();
+        if (modelIsWhite) {
+            for (String piece : whitePieces) {
+                Square queenSquare = StringToSquare(piece);
+                if (board.getPiece(queenSquare.getRow(), queenSquare.getCol()) == 'R') {score += QueenAttacks(board, piece, stringBuilder).size();}
+            }
+        }
+        else {
+            for (String piece : blackPieces) {
+                Square queenSquare = StringToSquare(piece);
+                if (board.getPiece(queenSquare.getRow(), queenSquare.getCol()) == 'r') {score += QueenAttacks(board, piece, stringBuilder).size();}
+            }
+        }
+        return score;
+    }
+    public static double CalculatePointsSurroundingKing(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces) {
+        int score = 0;
+        String kingSquareString = "null";
+        Square kingSquare = new Square(0, 0);
+        if (modelIsWhite) {
+            for (String piece : whitePieces) {
+                kingSquare = StringToSquare(piece);
+                if (board.getPiece(kingSquare.getRow(), kingSquare.getCol()) == 'K') {kingSquareString = piece;}
+            }
+        }
+        else {
+            for  (String piece : blackPieces) {
+                kingSquare = StringToSquare(piece);
+                if (board.getPiece(kingSquare.getRow(), kingSquare.getCol()) == 'k') {kingSquareString = piece;}            }
+        }
+        //Now we have the square the king is on. We need to get surrounding squares
+        ArrayList<String> adjacent = new ArrayList<>();
+        Integer[][] offsets = {{1,-1}, {1, 0}, {1, 1} , {0, -1}, {0,1}, {-1, -1}, {-1, 0} , {-1, 1}};
+        for (Integer[] offset : offsets) {
+            //Get new square
+            int newRow = kingSquare.getRow() + offset[0];
+            int newCol = kingSquare.getCol() + offset[1];
+            //Check within bounds of board
+            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                //Check square contains a friendly piece
+                if (modelIsWhite) {
+                    if (Character.isUpperCase(board.getPiece(newRow, newCol))) {
+                        switch (board.getPiece(newRow, newCol)) {
+                            case 'P':
+                                score++;
+                                break;
+                            case 'R':
+                                score += 5;
+                                break;
+                            case 'N':
+                            case 'B':
+                                score += 3;
+                                break;
+                            case 'Q':
+                                score += 9;
+                                break;
+                            default:
+                                System.out.println("Something ain't right.");
+                        }
+                    }
+                }
+                else {
+                    if (Character.isLowerCase(board.getPiece(newRow, newCol))) {
+                        switch (board.getPiece(newRow, newCol)) {
+                            case 'p':
+                                score++;
+                                break;
+                            case 'r':
+                                score += 5;
+                                break;
+                            case 'n':
+                            case 'b':
+                                score += 3;
+                                break;
+                            case 'q':
+                                score += 9;
+                                break;
+                            default:
+                                System.out.println("Something ain't right.");
+                        }
+                    }
+                }
+            }
+        }
+        return score;
     }
 }
