@@ -5,12 +5,13 @@ import Pieces.*;
 import GameState.*;
 import MachineLearning.*;
 
-import javax.print.DocFlavor;
-
 
 public class Main {
     public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
+        System.out.println("Train model (Y/N)");
+        String userChoice = input.nextLine();
+        if (userChoice.equals("Y")) TrainModel();
         //Set up gamestate
         Board board = new Board();
         String enPassantSquare = null;
@@ -30,7 +31,7 @@ public class Main {
         StringBuilder gameNotation = new StringBuilder();
         int turnCounter = 0;
         System.out.println("White or Black");
-        String userChoice = input.nextLine();
+        userChoice = input.nextLine();
         boolean playerIsWhite;
         if (userChoice.equals("w")) {playerIsWhite = true;}
         else {playerIsWhite = false;}
@@ -41,16 +42,13 @@ public class Main {
 
     public static void PickMode(GameState gameState) {
         Scanner input = new Scanner(System.in);
-        System.out.println("1 = PLay against strongest engine. 2 = Train model. 3 = Computer plays itself");
+        System.out.println("1 = Play against strongest engine. 2 = Computer plays itself");
         int userOption = input.nextInt();
         switch (userOption) {
             case 1:
                 PlayGame(gameState);
                 break;
             case 2:
-                TrainModel();
-                break;
-            case 3:
                 SelfStart();
                 break;
         }
@@ -92,6 +90,7 @@ public class Main {
     }
 
     public static GameState PlayerMoveImproved(GameState gameState) {
+        gameState.setWhiteMove(false);
         //Increment turn counter
         gameState.setTurnCounter(gameState.getTurnCounter() + 1);
         //Repeatedly ask player to pick a piece to move, and where to move it to
@@ -1166,8 +1165,8 @@ public class Main {
         while (true) {
             //Initially just testing an idea. Hence model has 3 parameters, and a depth of 1
             //Instantiate models with temp values (real values will be read from files)
-            PlayingModel bestModel = new PlayingModel(0, 0, 0);
-            PlayingModel currentModel = new PlayingModel(0, 0, 0);
+            PlayingModel bestModel = new PlayingModel(1000, 1000, 1000);
+            PlayingModel currentModel = new PlayingModel(1000, 1000, 1000);
             //Read in the best model so far from file
             try (BufferedReader bestReader = new BufferedReader(new FileReader("BestModel.txt"))) {
                 String line;
@@ -1209,16 +1208,16 @@ public class Main {
                 System.err.println("Error reading current");
             }
             //During training, current model plays best many times, and average win/loss reward. If positive, update best as current (WIP solution)
-            //Reward formula = 100 * (0.9 ^ (Turns taken / 2)), negative for loss. Draw = 0 reward. (Idk if this works at all but it's a start)
+            //Reward formula = 100 * (0.95 ^ (Turns taken / 2)), negative for loss. Draw = 0 reward. (Idk if this works at all but it's a start)
             //For now random move is best model
             int noOfGamesToGetBetterModel = 10000; //Models play 10000 games, if one has a positive reward it (in theory) is better
-            int reward = 0;
+            double reward = 0;
             //Set up game
             //Play half of the games as white
             for (int i = 0; i < noOfGamesToGetBetterModel / 2; i++) {
                 //Set up variables for GameState
                 Board board = new Board();
-                boolean whiteTurn = true;
+                boolean modelIsWhite = true;
                 String enPassantSquare = null;
                 ArrayList<String> whitePieces = new ArrayList<>();
                 whitePieces.add("a1");whitePieces.add("b1");whitePieces.add("c1");whitePieces.add("d1");whitePieces.add("e1");whitePieces.add("f1");whitePieces.add("g1");whitePieces.add("h1");
@@ -1235,12 +1234,12 @@ public class Main {
                 ArrayList<Hash> hashTable = new ArrayList<>();
                 StringBuilder gameNotation = new StringBuilder();
                 int turnCounter = 0;
-                GameState gameState = new GameState(board, whiteTurn, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
                 boolean finished = false;
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
                 while (!finished) {
                     //Determine if white moves next (model) or black (random)
-                    if (gameState.getPlayerIsWhite()) {gameState = ModelMoveImproved(gameState, currentModel);}
+                    if (gameState.getWhiteMove()) {gameState = ModelMoveImproved(gameState, currentModel);}
                     else {gameState = ComputerMoveImproved(gameState);}
                     //Check for draw and checkmate
                     if (gameState.getWhiteWin()) {
@@ -1250,13 +1249,13 @@ public class Main {
                         //Update reward. There will be number errors, but hopefully small enough to not impact the program too much
                         //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
                         //which wouldn't change the overall outcome of the model being better or worse
-                        reward += 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        reward += 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
                     }
                     else if (gameState.getBlackWin()) {
                         System.out.println("Black (random) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
-                        reward -= 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        reward -= 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
                     }
                     else if (gameState.getStalemate()) {
                         System.out.println("Stalemate!");
@@ -1279,7 +1278,7 @@ public class Main {
             for (int i = 0; i < noOfGamesToGetBetterModel / 2; i++) {
                 //Set up variables for GameState
                 Board board = new Board();
-                boolean whiteTurn = true;
+                boolean modelIsWhite = false;
                 String enPassantSquare = null;
                 ArrayList<String> whitePieces = new ArrayList<>();
                 whitePieces.add("a1");whitePieces.add("b1");whitePieces.add("c1");whitePieces.add("d1");whitePieces.add("e1");whitePieces.add("f1");whitePieces.add("g1");whitePieces.add("h1");
@@ -1296,26 +1295,25 @@ public class Main {
                 ArrayList<Hash> hashTable = new ArrayList<>();
                 StringBuilder gameNotation = new StringBuilder();
                 int turnCounter = 0;
-                GameState gameState = new GameState(board, whiteTurn, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
                 boolean finished = false;
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
                 while (!finished) {
                     //Determine if white moves next (model) or black (random)
-                    if (gameState.getPlayerIsWhite()) {gameState = ComputerMoveImproved(gameState);}
-
+                    if (gameState.getWhiteMove()) {gameState = ComputerMoveImproved(gameState);}
                     else gameState = ModelMoveImproved(gameState, currentModel);
                     //Check for draw and checkmate
                     if (gameState.getWhiteWin()) {
                         System.out.println("White (random) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
-                        reward -= 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        reward -= 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
                     }
                     else if (gameState.getBlackWin()) {
                         System.out.println("Black (model) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
-                        reward += 100 * Math.pow(0.9, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        reward += 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
                     }
                     else if (gameState.getStalemate()) {
                         System.out.println("Stalemate!");
@@ -1398,7 +1396,6 @@ public class Main {
         score = (model.getQueenActivity()*queenScore) + (model.getRookActivity()*rookScore) + (model.getPointsSurroundingKing()*surroundKingPointScore);
         ModelEvaluation positionValue = new ModelEvaluation(originString, destinationString, score, piecePromotionSymbol);
         positionValues.add(positionValue);
-
     }
     public static double CalculateQueenActivity(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces) {
         //Find square that queen is on. Add to move total. Return total
@@ -1478,7 +1475,6 @@ public class Main {
                                 score += 9;
                                 break;
                             default:
-                                System.out.println("Something ain't right.");
                         }
                     }
                 }
@@ -1499,7 +1495,6 @@ public class Main {
                                 score += 9;
                                 break;
                             default:
-                                System.out.println("Something ain't right.");
                         }
                     }
                 }
@@ -1534,6 +1529,7 @@ public class Main {
             else if (!gameState.getPlayerIsWhite() && Character.isLowerCase(gameState.getBoard().getPiece(originSquare.getRow(), originSquare.getCol())))
                 pieceIsUsers = true;
         } while (!pieceIsUsers);
+        gameState.setPieceSymbol(gameState.getBoard().getPiece(originSquare.getRow(), originSquare.getCol()));
         gameState.setOriginSquareString(originSquareString);
         return gameState;
     }
@@ -1581,7 +1577,10 @@ public class Main {
         String destinationSquareString = input.nextLine();
         //If user didn't pick one of the available moves, make them pick a square again to select a piece to move
         for (String move : playerMoves) {
-            if (destinationSquareString.equalsIgnoreCase(move)) {gameState.setDestinationSquareString(destinationSquareString);}
+            if (destinationSquareString.equalsIgnoreCase(move)) {
+                gameState.setDestinationSquareString(destinationSquareString);
+                break;
+            }
             else {gameState.setDestinationSquareString(null);}
         }
         return gameState;
@@ -1595,8 +1594,8 @@ public class Main {
         ArrayList<String> newWhitePieces = new ArrayList<>();
         ArrayList<String> newBlackPieces = new ArrayList<>();
         String destinationSquareString = gameState.getDestinationSquareString();
-        //If player plays white
-        if (gameState.getPlayerIsWhite()) {
+        //If white to move
+        if (gameState.getWhiteMove()) {
             //Copy black pieces
             newBlackPieces.addAll(blackPieces);
             gameState.setA1Castling(false);
@@ -1605,7 +1604,7 @@ public class Main {
             //Determine castling side
             if (destinationSquareString.equals("O-O")) kingsideCaslting = true;
             int pieceIndex = 0;
-            //If player castling short
+            //If castling short
             if (kingsideCaslting) {
                 //Find add in all the pieces to newWhitePieces apart from king and short rook
                 for (String piece : whitePieces) {
@@ -1638,7 +1637,7 @@ public class Main {
             }
         }
         else {
-            //Same thing for when player is playing black
+            //Same thing for when black playing
             newWhitePieces.addAll(whitePieces);
             gameState.setA8Castling(false);
             gameState.setH8Castling(false);
@@ -1683,20 +1682,24 @@ public class Main {
         Square destinationSquare = StringToSquare(destinationSquareString);
         Board board = gameState.getBoard();
         //Update starting location as empty
-        char pieceSymbol = board.getPiece(originSquare.getRow(), originSquare.getCol());
+        char pieceSymbol = gameState.getPieceSymbol();
         board.setPiece(originSquare.getRow(), originSquare.getCol(), '.');
         if ((destinationSquareString.equals(gameState.getEnPassantSquareString())) && (Character.toLowerCase(pieceSymbol) == 'p')) {
             //En passant was picked
             //If player is white, the pawn to en passant is 1 square down from the en passant square
-            if (gameState.getPlayerIsWhite()) board.setPiece(destinationSquare.getRow()-1, destinationSquare.getCol(), pieceSymbol);
-            else board.setPiece(destinationSquare.getRow()+1, destinationSquare.getCol(), pieceSymbol);
+            if (gameState.getPlayerIsWhite()) {
+                board.setPiece(destinationSquare.getRow() - 1, destinationSquare.getCol(), '.');
+            }
+            else {
+                board.setPiece(destinationSquare.getRow()+1, destinationSquare.getCol(), '.');
+            }
+            board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), pieceSymbol);
         }
         else {
             //Normal move was picked
             board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), pieceSymbol);
         }
         gameState.setBoard(board);
-        gameState.setPieceSymbol(pieceSymbol);
         return gameState;
     }
     public static GameState UpdateEnPassantSquareString(GameState gameState) {
@@ -1739,7 +1742,7 @@ public class Main {
         Board board = gameState.getBoard();
         char pieceSymbol = gameState.getPieceSymbol();
         //Find out if player is white
-        if (gameState.getPlayerIsWhite()) {
+        if (gameState.getWhiteMove()) {
             gameState = UpdatePieceListInner(gameState, whitePieces, blackPieces, originSquareString, destinationSquareString, destinationSquare, pieceSymbol, 1, 'P', board);
         }
         else {
@@ -1754,11 +1757,6 @@ public class Main {
         //Now determine if enPassant was picked
         if ((destinationSquareString.equals(gameState.getEnPassantSquareString())) && (pieceSymbol == pieceSymbolComparison)) {
             //En passant was picked
-            //Updating attacking pieces
-            for (String attPiece : attPieces) {
-                if (!attPiece.equals(originSquareString)) { newAttPieces.add(attPiece); }
-                newAttPieces.add(destinationSquareString);
-            }
             //Updating defending pieces
             String squareOfEnPassantPawnString = CoordinateToString(destinationSquare.getRow()-number, destinationSquare.getCol(), gameState.getStringBuilder());
             for (String defPiece : defPieces) {
@@ -1781,12 +1779,12 @@ public class Main {
                 }
                 gameState.setCaptureMade(true);
             }
-            //Change attPieces
-            for (String attPiece : newAttPieces) {
-                if (!attPiece.equals(originSquareString)) { newAttPieces.add(attPiece); }
-                newAttPieces.add(destinationSquareString);
-            }
         }
+        //Update attacking pieces
+        for (String attPiece : attPieces) {
+            if (!attPiece.equals(originSquareString)) { newAttPieces.add(attPiece); }
+        }
+        newAttPieces.add(destinationSquareString);
         if (gameState.getWhiteMove()) {
             gameState.setWhitePieces(newAttPieces);
             gameState.setBlackPieces(newDefPieces);
@@ -1812,6 +1810,7 @@ public class Main {
             } while (!correctSymbol);
             if (gameState.getPlayerIsWhite()) board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), newPiece);
             else board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), Character.toLowerCase(newPiece));
+            gameState.setOtherPiecePromotionSymbol(newPiece);
         }
         gameState.setBoard(board);
         return gameState;
@@ -1823,8 +1822,24 @@ public class Main {
         switch (pieceSymbol) {
             case 'P':
             case 'p':
-                if (gameState.getWhiteMove()) gameNotation.append((((gameState.getTurnCounter() - 1) / 2) + 1) + ": " + gameState.getOriginSquareString() + gameState.getDestinationSquareString() + " ");
-                else gameNotation.append(gameState.getOriginSquareString() + gameState.getDestinationSquareString() + " ");
+                if (gameState.getWhiteMove()) {
+                    gameNotation.append((((gameState.getTurnCounter() - 1) / 2) + 1) + ": " + gameState.getOriginSquareString() + gameState.getDestinationSquareString());
+                    if (gameState.getOtherPiecePromotionSymbol()!='X') {
+                        gameNotation.append('=');
+                        gameNotation.append(gameState.getOtherPiecePromotionSymbol());
+                        gameState.setOtherPiecePromotionSymbol('X');
+                    }
+                    gameNotation.append(' ');
+                }
+                else {
+                    gameNotation.append(gameState.getOriginSquareString() + gameState.getDestinationSquareString());
+                    if (gameState.getOtherPiecePromotionSymbol()!='X') {
+                        gameNotation.append('=');
+                        gameNotation.append(gameState.getOtherPiecePromotionSymbol());
+                        gameState.setOtherPiecePromotionSymbol('X');
+                    }
+                    gameNotation.append(' ');
+                }
                 break;
             case 'B':
             case 'b':
@@ -1848,8 +1863,22 @@ public class Main {
                 break;
             case 'K':
             case 'k':
-                if (gameState.getWhiteMove()) gameNotation.append((((gameState.getTurnCounter() - 1) / 2) + 1) + ": " + "K" + gameState.getOriginSquareString() + gameState.getDestinationSquareString() + " ");
-                else gameNotation.append("K" + gameState.getOriginSquareString() + gameState.getDestinationSquareString() + " ");
+                if (gameState.getWhiteMove()) {
+                    if (!gameState.getDestinationSquareString().equals("O-O") && !gameState.getDestinationSquareString().equals("O-O")) {
+                        gameNotation.append((((gameState.getTurnCounter() - 1) / 2) + 1) + ": " + "K" + gameState.getOriginSquareString() + gameState.getDestinationSquareString() + " ");
+                    }
+                    else {
+                        gameNotation.append((((gameState.getTurnCounter() - 1) / 2) + 1) + ": " + gameState.getDestinationSquareString() + " ");
+                    }
+                }
+                else {
+                    if (!gameState.getDestinationSquareString().equals("O-O") && !gameState.getDestinationSquareString().equals("O-O")) {
+                        gameNotation.append("K" + gameState.getOriginSquareString() + gameState.getDestinationSquareString() + " ");
+                    }
+                    else {
+                        gameNotation.append(gameState.getDestinationSquareString() + " ");
+                    }
+                }
                 break;
         }
         gameState.setGameNotation(gameNotation);
@@ -1905,11 +1934,12 @@ public class Main {
         char pieceSymbol = gameState.getPieceSymbol();
         Square destinationSquare = StringToSquare(gameState.getDestinationSquareString());
         if ((pieceSymbol == 'P' && destinationSquare.getRow() == 7) || (pieceSymbol == 'p' && destinationSquare.getRow() == 0)) {
-            char[] pieceTypes = {'Q', 'R', 'B', 'K'};
+            char[] pieceTypes = {'Q', 'R', 'B', 'N'};
             int randInt = random.nextInt(pieceTypes.length);
             pieceSymbol =  pieceTypes[randInt];
             if (!gameState.getPlayerIsWhite()) board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), pieceSymbol);
             else board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), Character.toLowerCase(pieceSymbol));
+            gameState.setOtherPiecePromotionSymbol(pieceSymbol);
         }
         gameState.setBoard(board);
         return gameState;
@@ -1943,14 +1973,14 @@ public class Main {
                 listNumber++;
             }
         }
+        Square originSquare = StringToSquare(allMoves.get(listNumber).getFirst());
         //So the random move picked is in the 'listNumber' list, and is the nth move where n = randomMove + 1
         gameState.setOriginSquareString(allMoves.get(listNumber).getFirst());
         gameState.setDestinationSquareString(allMoves.get(listNumber).get(randomMove));
+        gameState.setPieceSymbol(board.getPiece(originSquare.getRow(), originSquare.getCol()));
         return gameState;
     }
     public static GameState ModelPicksMove(GameState gameState, PlayingModel model) {
-        //Increment turn counter
-        gameState.setTurnCounter(gameState.getTurnCounter() + 1);
         //Get all the required variables
         Board board = gameState.getBoard();
         boolean modelIsWhite = gameState.getPlayerIsWhite();
@@ -2115,13 +2145,12 @@ public class Main {
                         newWhitePieces.add(destinationSquareString);
                     }
                     //Handle Promotion
-                    if ((pieceSymbol == 'P' && moveSquare.getRow() == 7) || (pieceSymbol == 'p' && moveSquare.getRow() == 0)) {
+                    if ((tempPieceSymbol == 'P' && moveSquare.getRow() == 7) || (tempPieceSymbol == 'p' && moveSquare.getRow() == 0)) {
                         char[] promotionOptions = {'Q', 'R', 'B', 'N'};
                         for (char piece : promotionOptions) {
                             Board tempTempBoard = CopyBoard(tempBoard);
-                            char newPiece = piece;
-                            if (modelIsWhite) tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), newPiece);
-                            else tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(newPiece));
+                            if (modelIsWhite) tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), piece);
+                            else tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(piece));
                             CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), piece, model);
                         }
                     }
@@ -2136,20 +2165,25 @@ public class Main {
         for (ModelEvaluation positionValue : positionValues) {
             total += Math.pow(positionValue.getScore(), 2);
         }
-        double randomMove = random.nextDouble(total);
+        double randomMove = 0;
+        if (total > 0) {
+            randomMove = random.nextDouble(total);
+        }
         //Now we decide which move that was (similarly to the computer making random moves)
         int moveIndex = 0;
         for (ModelEvaluation positionValue : positionValues) {
-            if (randomMove < Math.pow(positionValue.getScore(), 2)) break;
+            if (randomMove <= Math.pow(positionValue.getScore(), 2)) break;
             else {
                 randomMove -= Math.pow(positionValue.getScore(), 2);
                 moveIndex++;
             }
         }
         //The move chosen is the positionValue at position moveIndex in positionValues
+        Square originSquare = StringToSquare(positionValues.get(moveIndex).getOriginSquare());
         gameState.setOriginSquareString(positionValues.get(moveIndex).getOriginSquare());
+        gameState.setPieceSymbol(board.getPiece(originSquare.getRow(), originSquare.getCol()));
         gameState.setDestinationSquareString(positionValues.get(moveIndex).getDestinationSquare());
-        gameState.setPiecePromotionSymbol(positionValues.get(moveIndex).getPiecePromotionSymbol());
+        gameState.setOtherPiecePromotionSymbol(positionValues.get(moveIndex).getPiecePromotionSymbol());
         return gameState;
     }
     public static GameState HandleModelPromotion(GameState gameState) {
@@ -2157,9 +2191,10 @@ public class Main {
         char pieceSymbol = gameState.getPieceSymbol();
         Square destinationSquare = StringToSquare(gameState.getDestinationSquareString());
         if ((pieceSymbol == 'P' && destinationSquare.getRow() == 7) || (pieceSymbol == 'p' && destinationSquare.getRow() == 0)) {
-            pieceSymbol = gameState.getPiecePromotionSymbol();
-            if (!gameState.getPlayerIsWhite()) board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), pieceSymbol);
+            pieceSymbol = gameState.getOtherPiecePromotionSymbol();
+            if (gameState.getWhiteMove()) board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), pieceSymbol);
             else board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), Character.toLowerCase(pieceSymbol));
+            gameState.setOtherPiecePromotionSymbol(pieceSymbol);
         }
         gameState.setBoard(board);
         return gameState;
