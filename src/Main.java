@@ -36,7 +36,8 @@ public class Main {
         if (userChoice.equals("w")) {playerIsWhite = true;}
         else {playerIsWhite = false;}
         GameState gameState = new GameState(board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
-        PickMode(gameState);
+        PlayingModel model = new PlayingModel (10, 10, 10, 1000);
+        ModelMoveImproved(gameState, model);
     }
 
 
@@ -90,7 +91,6 @@ public class Main {
     }
 
     public static GameState PlayerMoveImproved(GameState gameState) {
-        gameState.setWhiteMove(false);
         //Increment turn counter
         gameState.setTurnCounter(gameState.getTurnCounter() + 1);
         //Repeatedly ask player to pick a piece to move, and where to move it to
@@ -1162,11 +1162,11 @@ public class Main {
         }
     }
     public static void TrainModel() {
-        while (true) {
+        //while (true) {
             //Initially just testing an idea. Hence model has 3 parameters, and a depth of 1
             //Instantiate models with temp values (real values will be read from files)
-            PlayingModel bestModel = new PlayingModel(1000, 1000, 1000);
-            PlayingModel currentModel = new PlayingModel(1000, 1000, 1000);
+            PlayingModel bestModel = new PlayingModel(1000, 1000, 1000, 1000);
+            PlayingModel currentModel = new PlayingModel(1000, 1000, 1000, 1000);
             //Read in the best model so far from file
             try (BufferedReader bestReader = new BufferedReader(new FileReader("BestModel.txt"))) {
                 String line;
@@ -1181,6 +1181,9 @@ public class Main {
                             break;
                         case "PointsSurroundingKing":
                             bestModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
+                            break;
+                        case "Checkmate":
+                            bestModel.setCheckmate(Double.parseDouble(splitLine[1]));
                             break;
                     }
                 }
@@ -1202,6 +1205,10 @@ public class Main {
                         case "PointsSurroundingKing":
                             currentModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
                             break;
+                        case "Checkmate":
+                            currentModel.setCheckmate(Double.parseDouble(splitLine[1]));
+                            break;
+
                     }
                 }
             } catch (IOException e) {
@@ -1212,6 +1219,9 @@ public class Main {
             //For now random move is best model
             int noOfGamesToGetBetterModel = 10000; //Models play 10000 games, if one has a positive reward it (in theory) is better
             double reward = 0;
+            int wins = 0;
+            int losses = 0;
+            int draws = 0;
             //Set up game
             //Play half of the games as white
             for (int i = 0; i < noOfGamesToGetBetterModel / 2; i++) {
@@ -1250,27 +1260,32 @@ public class Main {
                         //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
                         //which wouldn't change the overall outcome of the model being better or worse
                         reward += 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        wins++;
                     }
                     else if (gameState.getBlackWin()) {
                         System.out.println("Black (random) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
                         reward -= 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        losses++;
                     }
                     else if (gameState.getStalemate()) {
                         System.out.println("Stalemate!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
+                        draws++;
                     }
                     else if (gameState.getMoveRule50()) {
                         System.out.println("Draw by 50 move rule!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
+                        draws++;
                     }
                     else if (gameState.getRepetitionDraw()) {
                         System.out.println("Draw by repetition!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
+                        draws++;
                     }
                 }
             }
@@ -1308,27 +1323,32 @@ public class Main {
                         System.out.println(gameState.getGameNotation());
                         finished = true;
                         reward -= 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        losses++;
                     }
                     else if (gameState.getBlackWin()) {
                         System.out.println("Black (model) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
                         reward += 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
+                        wins++;
                     }
                     else if (gameState.getStalemate()) {
                         System.out.println("Stalemate!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
+                        draws++;
                     }
                     else if (gameState.getMoveRule50()) {
                         System.out.println("Draw by 50 move rule!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
+                        draws++;
                     }
                     else if (gameState.getRepetitionDraw()) {
                         System.out.println("Draw by repetition!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
+                        draws++;
                     }
                 }
             }
@@ -1356,18 +1376,31 @@ public class Main {
             int parameterChangeIndex = random.nextInt(3);
             double randomChangeValue = random.nextDouble();
             int multiplier = 1;
+            double newWeight = 0;
             if (random.nextBoolean()) {
                 multiplier = -1;
             }
             switch (parameterChangeIndex) {
                 case 0:
-                    currentModel.setQueenActivity(currentModel.getQueenActivity() + (multiplier * randomChangeValue));
+                    newWeight = currentModel.getQueenActivity() + (multiplier * randomChangeValue);
+                    if (newWeight < 0) {
+                        newWeight = 0;
+                    }
+                    currentModel.setQueenActivity(newWeight);
                     break;
                 case 1:
-                    currentModel.setRookActivity(currentModel.getRookActivity() + (multiplier * randomChangeValue));
+                    newWeight = currentModel.getRookActivity() + (multiplier * randomChangeValue);
+                    if (newWeight < 0) {
+                        newWeight = 0;
+                    }
+                    currentModel.setRookActivity(newWeight);
                     break;
                 case 2:
-                    currentModel.setPointsSurroundingKing(currentModel.getPointsSurroundingKing() + (multiplier * randomChangeValue));
+                    newWeight = currentModel.getPointsSurroundingKing() + (multiplier * randomChangeValue);
+                    if (newWeight < 0) {
+                        newWeight = 0;
+                    }
+                    currentModel.setPointsSurroundingKing(newWeight);
                     break;
                 default:
                     System.out.println("Invalid parameter");
@@ -1377,24 +1410,29 @@ public class Main {
             stringBuilder.append("QueenActivity " + currentModel.getQueenActivity() + "\n");
             stringBuilder.append("RookActivity " + currentModel.getRookActivity() + "\n");
             stringBuilder.append("PointsSurroundingKing " + currentModel.getPointsSurroundingKing());
+            stringBuilder.append("Checkmate" + currentModel.getCheckmate());
             try (BufferedWriter currentWriter = new BufferedWriter(new FileWriter("CurrentModel.txt"))) {
                 currentWriter.write(stringBuilder.toString());
             } catch (IOException e) {
                 System.out.println("Error writing to current");
             }
+            System.out.println(wins);
+            System.out.println(draws);
+            System.out.println(losses);
         }
-    }
+    //}
 
 
-    public static void CalculateScoreOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, ArrayList<ModelEvaluation> positionValues, String originString, String destinationString, char piecePromotionSymbol, PlayingModel model){
+    public static void CalculateScoreOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, ArrayList<ModelEvaluation> positionValues, String originSquareString, String destinationSquareString, char piecePromotionSymbol, PlayingModel model, StringBuilder stringBuilder, String enPassantSquareString, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling){
         double score = 0;
         //Calculate the score of the position
         double queenScore = CalculateQueenActivity(board, modelIsWhite, whitePieces, blackPieces);
         double rookScore = CalculateRookActivity(board, modelIsWhite, whitePieces, blackPieces);
         double surroundKingPointScore = CalculatePointsSurroundingKing(board, modelIsWhite, whitePieces, blackPieces);
+        double checkmateScore = CalculateCheckmate(board, modelIsWhite, whitePieces, blackPieces, stringBuilder, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, destinationSquareString);
         //Calculate score for position
-        score = (model.getQueenActivity()*queenScore) + (model.getRookActivity()*rookScore) + (model.getPointsSurroundingKing()*surroundKingPointScore);
-        ModelEvaluation positionValue = new ModelEvaluation(originString, destinationString, score, piecePromotionSymbol);
+        score = (model.getQueenActivity()*queenScore) + (model.getRookActivity()*rookScore) + (model.getPointsSurroundingKing()*surroundKingPointScore) + (model.getCheckmate()*checkmateScore);
+        ModelEvaluation positionValue = new ModelEvaluation(originSquareString, destinationSquareString, score, piecePromotionSymbol);
         positionValues.add(positionValue);
     }
     public static double CalculateQueenActivity(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces) {
@@ -1502,7 +1540,30 @@ public class Main {
         }
         return score;
     }
-
+    public static double CalculateCheckmate(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, StringBuilder stringBuilder, String enPassantSquareString, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, String destinationSquareString) {
+        ArrayList<ArrayList<String>> opponentMoves = AllMoves(board, !modelIsWhite, whitePieces, blackPieces, stringBuilder, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling);
+        boolean movesAvailable = false;
+        for (ArrayList<String> moveList : opponentMoves) {
+            if (moveList.size() > 1) {
+                movesAvailable = true;
+                break;
+            }
+        }
+        if (movesAvailable) return 0;
+        else {
+            if (destinationSquareString.equals("O-O")) {
+                if (modelIsWhite) {destinationSquareString = "g1";}
+                else {destinationSquareString = "g8";}
+            }
+            else if (destinationSquareString.equals("O-O-O")) {
+                if (modelIsWhite) {destinationSquareString = "c1";}
+                else {destinationSquareString = "c8";}
+            }
+            boolean checkmate = CheckIfCheckmate(board, whitePieces, blackPieces, StringToSquare(destinationSquareString), stringBuilder);
+            if (checkmate) {return 1;}
+            else {return 0;}
+        }
+    }
 
 
 
@@ -1913,6 +1974,14 @@ public class Main {
         }
         if (movesAvailable) return gameState;
         else {
+            if (gameState.getDestinationSquareString().equals("O-O")) {
+                if (gameState.getWhiteMove()) {gameState.setDestinationSquareString("g1");}
+                else {gameState.setDestinationSquareString("g8");}
+            }
+            else if (gameState.getDestinationSquareString().equals("O-O-O")) {
+                if (gameState.getWhiteMove()) {gameState.setDestinationSquareString("c1");}
+                else {gameState.setDestinationSquareString("c8");}
+            }
             boolean checkmate = CheckIfCheckmate(gameState.getBoard(), gameState.getWhitePieces(), gameState.getBlackPieces(), StringToSquare(gameState.getDestinationSquareString()), gameState.getStringBuilder());
             if (checkmate) {
                 gameNotation.delete(gameNotation.length() - 1, gameNotation.length());
@@ -2080,7 +2149,7 @@ public class Main {
                             newBlackPieces.add("d8");
                         }
                     }
-                    CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model);
+                    CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), gameState.getA1Castling(), gameState.getH1Castling(), gameState.getA8Castling(), gameState.getH8Castling());
                 }
                 //If non castling move picked
                 else {
@@ -2151,10 +2220,10 @@ public class Main {
                             Board tempTempBoard = CopyBoard(tempBoard);
                             if (modelIsWhite) tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), piece);
                             else tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(piece));
-                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), piece, model);
+                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), piece, model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), gameState.getA1Castling(), gameState.getH1Castling(), gameState.getA8Castling(), gameState.getH8Castling());
                         }
                     }
-                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model);
+                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), gameState.getA1Castling(), gameState.getH1Castling(), gameState.getA8Castling(), gameState.getH8Castling());
                 }
             }
         }
