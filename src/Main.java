@@ -1375,10 +1375,10 @@ public class Main {
                 while (!finished) {
                     //Determine if white moves next (model) or black (random)
                     if (gameState.getWhiteMove()) {gameState = ModelMoveImprovedNoGUI(gameState, currentModel);}
-                    else {gameState = ComputerMoveImproved(gameState);}
+                    else {gameState = ModelMoveImprovedNoGUI(gameState, bestModel);}
                     //Check for draw and checkmate
                     if (gameState.getWhiteWin()) {
-                        System.out.println("White (model) wins!");
+                        System.out.println("White (current) wins!");
                         System.out.println(gameState.getGameNotation());
                         System.out.println(i);
                         finished = true;
@@ -1389,7 +1389,7 @@ public class Main {
                         wins++;
                     }
                     else if (gameState.getBlackWin()) {
-                        System.out.println("Black (random) wins!");
+                        System.out.println("Black (best) wins!");
                         System.out.println(gameState.getGameNotation());
                         System.out.println(i);
                         finished = true;
@@ -1445,18 +1445,18 @@ public class Main {
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
                 while (!finished) {
                     //Determine if white moves next (model) or black (random)
-                    if (gameState.getWhiteMove()) {gameState = ComputerMoveImproved(gameState);}
-                    else gameState = ModelMoveImprovedNoGUI(gameState, currentModel);
+                    if (gameState.getWhiteMove()) {gameState = ModelMoveImprovedNoGUI(gameState, bestModel);}
+                    else {gameState = ModelMoveImprovedNoGUI(gameState, currentModel);}
                     //Check for draw and checkmate
                     if (gameState.getWhiteWin()) {
-                        System.out.println("White (random) wins!");
+                        System.out.println("White (best) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
                         reward -= 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
                         losses++;
                     }
                     else if (gameState.getBlackWin()) {
-                        System.out.println("Black (model) wins!");
+                        System.out.println("Black (current) wins!");
                         System.out.println(gameState.getGameNotation());
                         finished = true;
                         reward += 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
