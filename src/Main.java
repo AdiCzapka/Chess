@@ -4,99 +4,178 @@ import java.io.*;
 import Pieces.*;
 import GameState.*;
 import MachineLearning.*;
+import GUI.*;
+import javax.swing.*;
+import java.awt.*;
+import java.util.concurrent.*;
 
 
 public class Main {
-    public static void main(String[] args) {
-        Scanner input = new Scanner(System.in);
-        System.out.println("Train model (Y/N)");
-        String userChoice = input.nextLine();
-        if (userChoice.equals("Y")) TrainModel();
-        //Set up gamestate
-        Board board = new Board();
-        String enPassantSquare = null;
-        ArrayList<String> whitePieces = new ArrayList<>();
-        whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1"); whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
-        whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
-        ArrayList<String> blackPieces = new ArrayList<>();
-        blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
-        blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
-        StringBuilder stringBuilder = new StringBuilder();
-        boolean a1Castling = true;
-        boolean h1Castling = true;
-        boolean a8Castling = true;
-        boolean h8Castling = true;
-        int moveCount100 = 0;
-        ArrayList<Hash> hashTable = new ArrayList<>();
-        StringBuilder gameNotation = new StringBuilder();
-        int turnCounter = 0;
-        System.out.println("White or Black");
-        userChoice = input.nextLine();
-        boolean playerIsWhite;
-        if (userChoice.equals("w")) {playerIsWhite = true;}
-        else {playerIsWhite = false;}
-        GameState gameState = new GameState(board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
-        PlayingModel model = new PlayingModel (10, 10, 10, 1000);
-        ModelMoveImproved(gameState, model);
-    }
-
-
-    public static void PickMode(GameState gameState) {
-        Scanner input = new Scanner(System.in);
-        System.out.println("1 = Play against strongest engine. 2 = Computer plays itself");
-        int userOption = input.nextInt();
-        switch (userOption) {
-            case 1:
-                PlayGame(gameState);
-                break;
-            case 2:
-                SelfStart();
-                break;
+    public static void main(String[] args) throws InterruptedException {
+        //LASTLY MAKE 2 VARIANTS OF MODEL MOVE, 1 WITH GUI TO PLAY AGAINST USEER, ANOTHER FOR TRAINING WITHOUT GUI
+        BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
+        GUI gui = new GUI(blockingQueue);
+        boolean valid = false;
+        while (!valid) {
+            System.out.println("1. Play against the best model. 2. Train model");
+            Scanner input = new Scanner(System.in);
+            String userChoice = input.nextLine();
+            if (userChoice.equals("1")) {StartPregame(); valid = true;}
+            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
         }
     }
-    public static void PlayGame(GameState gameState) {
+
+    public static void StartPregame() throws InterruptedException {
+        BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
+        GUI gui = new GUI(blockingQueue);
+        Board board = new Board();
+        gui.initialiseGUI(board);
         boolean finished = false;
         while (!finished) {
+            //
+            blockingQueue.clear();
+            board = new Board();
+            gui.restartGUI(board);
+            //Set up gamestate
+            String enPassantSquare = null;
+            ArrayList<String> whitePieces = new ArrayList<>();
+            whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1"); whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
+            whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
+            ArrayList<String> blackPieces = new ArrayList<>();
+            blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
+            blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
+            StringBuilder stringBuilder = new StringBuilder();
+            boolean a1Castling = true;
+            boolean h1Castling = true;
+            boolean a8Castling = true;
+            boolean h8Castling = true;
+            int moveCount100 = 0;
+            ArrayList<Hash> hashTable = new ArrayList<>();
+            StringBuilder gameNotation = new StringBuilder();
+            int turnCounter = 0;
+            boolean playerIsWhite = false;
+            boolean valid = false;
+            boolean pressedReplayAtColourSelection = false;
+            while (!valid) {
+                String userChoice = gui.getColourOption();
+                if (userChoice.equals("White")) {
+                    playerIsWhite = true;
+                    valid = true;
+                    if (!gui.getWhitePerspective()){
+                        gui.setWhitePerspective(!gui.getWhitePerspective()) ;
+                        gui.changeWhiteDown();
+                        gui.addButtonsToBoardPanel();
+                    }
+                }
+                else if (userChoice.equals("Black")) {
+                    playerIsWhite = false;
+                    valid = true;
+                    if (gui.getWhitePerspective()){
+                        gui.setWhitePerspective(!gui.getWhitePerspective()) ;
+                        gui.changeWhiteDown();
+                        gui.addButtonsToBoardPanel();
+                    }
+                }
+                else if (userChoice.equals("x")) {
+                    pressedReplayAtColourSelection = true;
+                    break;
+                }
+            }
+            GameState gameState = new GameState(board, playerIsWhite, enPassantSquare, whitePieces, blackPieces, stringBuilder, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+            if (!pressedReplayAtColourSelection) {
+                gameState = PlayGame(gameState, gui);
+                if (gameState.getTurnCounter() != -1) {
+                    //Wait for replay click
+                    gui.getRestartSignal();
+                }
+            }
+        }
+    }
+    public static GameState PlayGame(GameState gameState, GUI gui) throws InterruptedException {
+        PlayingModel bestModel = new PlayingModel(1000, 1000, 1000, 1000);
+        try (BufferedReader bestReader = new BufferedReader(new FileReader("BestModel.txt"))) {
+            String line;
+            while ((line = bestReader.readLine()) != null) {
+                String[] splitLine = line.split(" ");
+                switch (splitLine[0]) {
+                    case "QueenActivity":
+                        bestModel.setQueenActivity(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "RookActivity":
+                        bestModel.setRookActivity(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "PointsSurroundingKing":
+                        bestModel.setPointsSurroundingKing(Double.parseDouble(splitLine[1]));
+                        break;
+                    case "Checkmate":
+                        bestModel.setCheckmate(Double.parseDouble(splitLine[1]));
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading best");
+        }
+        while (true) {
             if (gameState.getWhiteMove()){
-                if (gameState.getPlayerIsWhite()) { gameState = PlayerMoveImproved(gameState); }
-                else { gameState = ComputerMoveImproved(gameState); }
+                if (gameState.getPlayerIsWhite()) {
+                    gameState = PlayerMoveImproved(gameState, gui);
+                    if (gameState.getTurnCounter() == -1) {
+                        //Reset the game
+                        return gameState;
+                    }
+                }
+                else { gameState = ModelMoveImproved(gameState, bestModel, gui); }
             }
             else {
-                if (!gameState.getPlayerIsWhite()) { gameState = PlayerMoveImproved(gameState); }
-                else { gameState = ComputerMoveImproved(gameState); }
+                if (!gameState.getPlayerIsWhite()) {
+                    gameState = PlayerMoveImproved(gameState, gui);
+                    if (gameState.getTurnCounter() == -1) {
+                        //Reset the game
+                        return gameState;
+                    }
+                }
+                else { gameState = ModelMoveImproved(gameState, bestModel, gui); }
             }
             //After move, check for draw / checkmate
             if (gameState.getWhiteWin()) {
                 System.out.println("White wins");
                 System.out.println(gameState.getGameNotation());
-                finished = true;
+                return gameState;
             } else if (gameState.getBlackWin()) {
                 System.out.println("Black wins!");
                 System.out.println(gameState.getGameNotation());
-                finished = true;
+                return gameState;
             } else if (gameState.getStalemate()) {
                 System.out.println("Stalemate!");
                 System.out.println(gameState.getGameNotation());
-                finished = true;
+                return gameState;
             } else if (gameState.getMoveRule50()) {
                 System.out.println("Draw by 50 move rule!");
                 System.out.println(gameState.getGameNotation());
-                finished = true;
+                return gameState;
             } else if (gameState.getRepetitionDraw()) {
                 System.out.println("Draw by repetition!");
                 System.out.println(gameState.getGameNotation());
-                finished = true;
+                return gameState;
             }
         }
     }
 
-    public static GameState PlayerMoveImproved(GameState gameState) {
+    public static GameState PlayerMoveImproved(GameState gameState, GUI gui) throws InterruptedException {
         //Increment turn counter
         gameState.setTurnCounter(gameState.getTurnCounter() + 1);
         //Repeatedly ask player to pick a piece to move, and where to move it to
         do {
-            gameState = PlayerPicksPiece(gameState);
-            gameState =  PlayerPicksMove(gameState);
+            gameState = PlayerPicksPieceNew(gameState, gui);
+            if (gameState.getTurnCounter() == -1) {
+                return gameState;
+            }
+            gameState =  PlayerPicksMoveNew(gameState, gui);
+            if (gameState.getTurnCounter() == -1) {
+                return gameState;
+            }
+            //Add clearing the red squares in here
+            gui.removeAttackSquares(gameState.getBoard());
         } while (gameState.getDestinationSquareString() == null);
         //Check for castling
         if (gameState.getDestinationSquareString().equals("O-O-O") || gameState.getDestinationSquareString().equals("O-O")) {
@@ -118,8 +197,10 @@ public class Main {
             //Update castling rights
             gameState = UpdateCastlingRights(gameState);
             //Handle promotion
-            gameState = HandlePlayerPromotion(gameState);
-
+            gameState = HandlePlayerPromotion(gameState, gui);
+            if (gameState.getTurnCounter() == -1) {
+                return gameState;
+            }
         }
         //Add to notation
         gameState = AddToNotation(gameState);
@@ -131,6 +212,8 @@ public class Main {
         gameState = CheckOpponentMoves(gameState);
         //Update last variable
         gameState.setWhiteMove(!gameState.getWhiteMove());
+        //Update the window
+        gui.updatePiecesGUI(CopyBoard(gameState.getBoard()));
         return gameState;
     }
     public static GameState ComputerMoveImproved(GameState gameState) {
@@ -173,7 +256,49 @@ public class Main {
         gameState.setWhiteMove(!gameState.getWhiteMove());
         return gameState;
     }
-    public static GameState ModelMoveImproved(GameState gameState, PlayingModel model) {
+    public static GameState ModelMoveImproved(GameState gameState, PlayingModel model, GUI gui) {
+        //Increment turn counter
+        gameState.setTurnCounter(gameState.getTurnCounter() + 1);
+        //Computer makes random moves
+        gameState = ModelPicksMove(gameState, model);
+        //Check for castling
+        if (gameState.getDestinationSquareString().equals("O-O-O") || gameState.getDestinationSquareString().equals("O-O")) {
+            //Castling requires different logic to normal moves.
+            //Make move on board. This also updates the piece lists, and handles castling rights
+            HandleCastling(gameState);
+            //Update enPassantSquare
+            gameState.setEnPassantSquareString(null);
+            //Update captureMade
+            gameState.setCaptureMade(false);
+        }
+        else {
+            //Update piece Lists
+            gameState = UpdatePieceListOuter(gameState);
+            //Make move on the board
+            gameState = UpdateBoard(gameState);
+            //Update EnPassantSquareString
+            gameState = UpdateEnPassantSquareString(gameState);
+            //Update castling rights
+            gameState = UpdateCastlingRights(gameState);
+            //Handle promotion
+            gameState = HandleModelPromotion(gameState);
+
+        }
+        //Add to notation
+        gameState = AddToNotation(gameState);
+        //50 move rule
+        gameState = Check50MoveRule(gameState);
+        //3 fold repetition
+        gameState = SelfHashPosition(gameState);
+        //Check opponent has legal moves
+        gameState = CheckOpponentMoves(gameState);
+        //Update last variable
+        gameState.setWhiteMove(!gameState.getWhiteMove());
+        //Update the window
+        gui.updatePiecesGUI(CopyBoard(gameState.getBoard()));
+        return gameState;
+    }
+    public static GameState ModelMoveImprovedNoGUI(GameState gameState, PlayingModel model) {
         //Increment turn counter
         gameState.setTurnCounter(gameState.getTurnCounter() + 1);
         //Computer makes random moves
@@ -1249,12 +1374,13 @@ public class Main {
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
                 while (!finished) {
                     //Determine if white moves next (model) or black (random)
-                    if (gameState.getWhiteMove()) {gameState = ModelMoveImproved(gameState, currentModel);}
+                    if (gameState.getWhiteMove()) {gameState = ModelMoveImprovedNoGUI(gameState, currentModel);}
                     else {gameState = ComputerMoveImproved(gameState);}
                     //Check for draw and checkmate
                     if (gameState.getWhiteWin()) {
                         System.out.println("White (model) wins!");
                         System.out.println(gameState.getGameNotation());
+                        System.out.println(i);
                         finished = true;
                         //Update reward. There will be number errors, but hopefully small enough to not impact the program too much
                         //With enough games, the little errors should cancel out (if model wins and loses equally) or be stacked on one side (if model wins / loses more than the other)
@@ -1265,6 +1391,7 @@ public class Main {
                     else if (gameState.getBlackWin()) {
                         System.out.println("Black (random) wins!");
                         System.out.println(gameState.getGameNotation());
+                        System.out.println(i);
                         finished = true;
                         reward -= 100 * Math.pow(0.95, Math.round((gameState.getTurnCounter() + 1) / 2));
                         losses++;
@@ -1272,18 +1399,21 @@ public class Main {
                     else if (gameState.getStalemate()) {
                         System.out.println("Stalemate!");
                         System.out.println(gameState.getGameNotation());
+                        System.out.println(i);
                         finished = true;
                         draws++;
                     }
                     else if (gameState.getMoveRule50()) {
                         System.out.println("Draw by 50 move rule!");
                         System.out.println(gameState.getGameNotation());
+                        System.out.println(i);
                         finished = true;
                         draws++;
                     }
                     else if (gameState.getRepetitionDraw()) {
                         System.out.println("Draw by repetition!");
                         System.out.println(gameState.getGameNotation());
+                        System.out.println(i);
                         finished = true;
                         draws++;
                     }
@@ -1316,7 +1446,7 @@ public class Main {
                 while (!finished) {
                     //Determine if white moves next (model) or black (random)
                     if (gameState.getWhiteMove()) {gameState = ComputerMoveImproved(gameState);}
-                    else gameState = ModelMoveImproved(gameState, currentModel);
+                    else gameState = ModelMoveImprovedNoGUI(gameState, currentModel);
                     //Check for draw and checkmate
                     if (gameState.getWhiteWin()) {
                         System.out.println("White (random) wins!");
@@ -1567,8 +1697,7 @@ public class Main {
 
 
 
-    public static GameState PlayerPicksPiece(GameState gameState) {
-        Scanner input = new Scanner(System.in);
+    public static GameState PlayerPicksPieceNew(GameState gameState, GUI gui) throws InterruptedException {
         String originSquareString;
         Square originSquare;
         boolean validSquareOnBoard = false;
@@ -1577,8 +1706,13 @@ public class Main {
         do {
             do {
                 //Inner loop checks that the square is on the board
-                System.out.println("Piece to move: "); //Enter something like 'e4'
-                originSquareString = input.nextLine();
+                originSquare = gui.getClickedSquare();
+                //Check for replay button pressed
+                if (originSquare.getRow() == -1 && originSquare.getCol() == -1) {
+                    gameState.setTurnCounter(-1);
+                    return gameState;
+                }
+                originSquareString = SquareToString(originSquare, gameState.getStringBuilder());
                 //Convert 'e4' into a 2d array coordinate
                 originSquare = StringToSquare(originSquareString);
                 if ((originSquare.getRow() < 8) && (originSquare.getCol() < 8) && (originSquare.getRow() >= 0) && (originSquare.getCol() >= 0))
@@ -1594,7 +1728,7 @@ public class Main {
         gameState.setOriginSquareString(originSquareString);
         return gameState;
     }
-    public static GameState PlayerPicksMove(GameState gameState) {
+    public static GameState PlayerPicksMoveNew(GameState gameState, GUI gui) throws InterruptedException {
         Scanner input = new Scanner(System.in);
         ArrayList<String> playerMoves = new ArrayList<>();
         Square originSquare = StringToSquare(gameState.getOriginSquareString());
@@ -1631,12 +1765,61 @@ public class Main {
         //Once we get the moves the piece can make, ask the user to pick one of the moves provided
         //Print out all the moves for the user
         stringBuilder.setLength(0);
-        stringBuilder.append("Moves available: ");
-        for (String move : playerMoves) stringBuilder.append(move).append(" ");
-        System.out.println(stringBuilder);
+        //Highlight moves on the board
+        for (String move : playerMoves) {
+            //Handle castling edge cases
+            if (move.equals("O-O")) {
+                if (gameState.getWhiteMove()) {
+                    gui.highlightSquare(StringToSquare("g1"));
+                }
+                else {
+                    gui.highlightSquare(StringToSquare("g8"));
+                }
+            }
+            else if (move.equals("O-O-O")) {
+                if (gameState.getWhiteMove()) {
+                    gui.highlightSquare(StringToSquare("c1"));
+                }
+                else {
+                    gui.highlightSquare(StringToSquare("c8"));
+                }
+            }
+            else {gui.highlightSquare(StringToSquare(move));}
+        }
         //Get user to pick move
-        String destinationSquareString = input.nextLine();
+        Square destinationSquare = gui.getClickedSquare();
+        //Check for replay button pressed
+        if (destinationSquare.getRow() == -1 && destinationSquare.getCol() == -1) {
+            gameState.setTurnCounter(-1);
+            return gameState;
+        }
+        String destinationSquareString = SquareToString(destinationSquare, gameState.getStringBuilder());
+        //Convert to castling notation if necessary
+        //Only convert if player picked castling. Either: Playing white + Picked King + Boolean allows it + picked the right square
+        if (gameState.getWhiteMove()) {
+            if (board.getPiece(originSquare.getRow(), originSquare.getCol()) == 'K') {
+                if (gameState.getA1Castling() && destinationSquareString.equals("c1")) {
+                    destinationSquareString = "O-O-O";
+                }
+                else if (gameState.getH1Castling() && destinationSquareString.equals("g1")) {
+                    destinationSquareString = "O-O";
+                }
+            }
+        }
+        else {
+            if (board.getPiece(originSquare.getRow(), originSquare.getCol()) == 'k') {
+                if (gameState.getA8Castling() && destinationSquareString.equals("c8")) {
+                    destinationSquareString = "O-O-O";
+                }
+                else if (gameState.getH8Castling() && destinationSquareString.equals("g8")) {
+                    destinationSquareString = "O-O";
+                }
+            }
+        }
         //If user didn't pick one of the available moves, make them pick a square again to select a piece to move
+        if (playerMoves.size() == 0) {
+            gameState.setDestinationSquareString(null);
+        }
         for (String move : playerMoves) {
             if (destinationSquareString.equalsIgnoreCase(move)) {
                 gameState.setDestinationSquareString(destinationSquareString);
@@ -1856,17 +2039,20 @@ public class Main {
         }
         return gameState;
     }
-    public static GameState HandlePlayerPromotion(GameState gameState) {
+    public static GameState HandlePlayerPromotion(GameState gameState, GUI gui) throws InterruptedException {
         Board board = gameState.getBoard();
         Scanner input =  new Scanner(System.in);
         boolean correctSymbol = false;
         char pieceSymbol = gameState.getPieceSymbol();
         Square destinationSquare = StringToSquare(gameState.getDestinationSquareString());
         if ((pieceSymbol == 'P' && destinationSquare.getRow() == 7) || (pieceSymbol == 'p' && destinationSquare.getRow() == 0)) {
-            System.out.println("Pick a piece to promote your pawn to: Queen (Q), Rook (R), Bishop (B), Knight(N)");
             char newPiece;
             do {
-                newPiece = Character.toUpperCase(input.nextLine().charAt(0));
+                newPiece = gui.getPromotionOption();
+                if (newPiece == 'x') {
+                    gameState.setTurnCounter(-1);
+                    return gameState;
+                }
                 if (newPiece == 'Q' || newPiece == 'R' || newPiece == 'B' || newPiece == 'N') correctSymbol = true;
             } while (!correctSymbol);
             if (gameState.getPlayerIsWhite()) board.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), newPiece);
@@ -2052,7 +2238,7 @@ public class Main {
     public static GameState ModelPicksMove(GameState gameState, PlayingModel model) {
         //Get all the required variables
         Board board = gameState.getBoard();
-        boolean modelIsWhite = gameState.getPlayerIsWhite();
+        boolean modelIsWhite = gameState.getWhiteMove();
         String enPassantSquare = gameState.getEnPassantSquareString();
         ArrayList<String> whitePieces = gameState.getWhitePieces();
         ArrayList<String> blackPieces = gameState.getBlackPieces();
