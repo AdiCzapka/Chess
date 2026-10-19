@@ -2271,10 +2271,16 @@ public class Main {
                 ArrayList<String> newWhitePieces = new ArrayList<>();
                 ArrayList<String> newBlackPieces = new ArrayList<>();
                 if (destinationSquareString.equals("O-O") || destinationSquareString.equals("O-O-O")) {
+                    boolean tempA1Castling;
+                    boolean tempH1Castling;
+                    boolean tempA8Castling;
+                    boolean tempH8Castling;
                     if (modelIsWhite) {
                         newBlackPieces.addAll(blackPieces);
-                        boolean tempA1Castling = false;
-                        boolean tempH1Castling = false;
+                        tempA1Castling = false;
+                        tempH1Castling = false;
+                        tempA8Castling = gameState.getA8Castling();
+                        tempH8Castling = gameState.getH8Castling();
                         boolean tempKingsideCaslting = false;
                         if (destinationSquareString.equals("O-O")) tempKingsideCaslting = true;
                         int pieceIndex = 0;
@@ -2305,8 +2311,10 @@ public class Main {
                     }
                     else {
                         newWhitePieces.addAll(whitePieces);
-                        boolean tempA8Castling = false;
-                        boolean tempH8Castling = false;
+                        tempA8Castling = false;
+                        tempH8Castling = false;
+                        tempA1Castling = gameState.getA1Castling();
+                        tempH1Castling = gameState.getH1Castling();
                         boolean tempKingsideCaslting = false;
                         if (destinationSquareString.equals("O-O")) tempKingsideCaslting = true;
                         int pieceIndex = 0;
@@ -2335,7 +2343,7 @@ public class Main {
                             newBlackPieces.add("d8");
                         }
                     }
-                    CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), gameState.getA1Castling(), gameState.getH1Castling(), gameState.getA8Castling(), gameState.getH8Castling());
+                    CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling);
                 }
                 //If non castling move picked
                 else {
@@ -2406,10 +2414,10 @@ public class Main {
                             Board tempTempBoard = CopyBoard(tempBoard);
                             if (modelIsWhite) tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), piece);
                             else tempTempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), Character.toLowerCase(piece));
-                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), piece, model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), gameState.getA1Castling(), gameState.getH1Castling(), gameState.getA8Castling(), gameState.getH8Castling());
+                            CalculateScoreOfPosition(tempTempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), piece, model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling);
                         }
                     }
-                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), gameState.getA1Castling(), gameState.getH1Castling(), gameState.getA8Castling(), gameState.getH8Castling());
+                    else CalculateScoreOfPosition(tempBoard, modelIsWhite, newWhitePieces, newBlackPieces, positionValues, moveList.getFirst(), moveList.get(i), 'X', model, gameState.getStringBuilder(), gameState.getEnPassantSquareString(), tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling);
                 }
             }
         }
