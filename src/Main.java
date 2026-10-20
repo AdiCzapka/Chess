@@ -12,6 +12,13 @@ import java.util.concurrent.*;
 
 
 public class Main {
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors(),
+        r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
 
     public static void main(String[] args) throws InterruptedException {
         BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
@@ -1551,7 +1558,6 @@ public class Main {
         double rookScore = CalculateRookActivity(board, modelIsWhite, whitePieces, blackPieces);
         double surroundKingPointScore = CalculatePointsSurroundingKing(board, modelIsWhite, whitePieces, blackPieces);
         double checkmateScore = CalculateCheckmate(board, modelIsWhite, whitePieces, blackPieces, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, destinationSquareString);
-        Thread.sleep(1);
         //Calculate score for position
         double score = (model.getQueenActivity()*queenScore) + (model.getRookActivity()*rookScore) + (model.getPointsSurroundingKing()*surroundKingPointScore) + (model.getCheckmate()*checkmateScore);
         ModelEvaluation positionValue = new ModelEvaluation(originSquareString, destinationSquareString, score, piecePromotionSymbol);
@@ -2464,7 +2470,6 @@ public class Main {
                 cards.add(() -> ModelEvaluateNewPosition(board, modelIsWhite, whitePieces, blackPieces, enPassantSquare, a1Castling, h1Castling, a8Castling, h8Castling, model, originSquareString, destinationSquareString));
             }
         }
-        ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         try {
             List<Future<ArrayList<ModelEvaluation>>> slips = threadPool.invokeAll(cards);
             for (Future<ArrayList<ModelEvaluation>> slip : slips) {
@@ -2475,8 +2480,6 @@ public class Main {
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
-        } finally {
-            threadPool.shutdown();
         }
         return positionValues;
     }
