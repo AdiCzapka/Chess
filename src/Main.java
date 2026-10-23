@@ -9,9 +9,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import java.util.concurrent.*;
-
+import Tree.*;
 
 public class Main {
+
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
         r -> {
@@ -32,7 +33,6 @@ public class Main {
             else if (userChoice.equals("2")) {TrainModel(); valid = true;}
         }
     }
-
     public static void StartPregame() throws InterruptedException {
         BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
         GUI gui = new GUI(blockingQueue);
@@ -167,7 +167,6 @@ public class Main {
             }
         }
     }
-
     public static GameState PlayerMoveImproved(GameState gameState, GUI gui) throws InterruptedException {
         //Increment turn counter
         gameState.setTurnCounter(gameState.getTurnCounter() + 1);
@@ -345,7 +344,6 @@ public class Main {
         gameState.setWhiteMove(!gameState.getWhiteMove());
         return gameState;
     }
-
     public static ArrayList<String> KingMove(Board board, Square toBeMoved, ArrayList<String> whitePieces, ArrayList<String> blackPieces, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling) {
 
         //Get all the theoretical moves that the king can make
@@ -1212,25 +1210,7 @@ public class Main {
         boolean whiteMovesNext = gameState.getPlayerIsWhite();
         ArrayList<Hash> hashTable = gameState.getHashTable();
         StringBuilder gameNotation = gameState.getGameNotation();
-
-        //Get the board position currently
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
-                stringBuilder.append(board.getPiece(row, col));
-            }
-        }
-        stringBuilder.append(Objects.requireNonNullElse(enPassantSquareString, "null"));
-        if (a1Castling) stringBuilder.append("1");
-        else stringBuilder.append("0");
-        if (h1Castling) stringBuilder.append("1");
-        else stringBuilder.append("0");
-        if (a8Castling) stringBuilder.append("1");
-        else stringBuilder.append("0");
-        if (h8Castling) stringBuilder.append("1");
-        else stringBuilder.append("0");
-        if (whiteMovesNext) stringBuilder.append("1");
-        else stringBuilder.append("0");
-        String hash = stringBuilder.toString();
+        String hash = GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, whiteMovesNext);
         boolean exists = false;
         for (Hash singleHash : hashTable) {
             if (singleHash.getHashedPosition().equals(hash)) {
@@ -2482,5 +2462,225 @@ public class Main {
             throw new RuntimeException(e);
         }
         return positionValues;
+    }
+    public static void CreateGameTree(TreeNode node, HashMap<Hash, Integer> gameTree, String parentHash) {
+        ArrayList<String> whitePieces = node.getWhitePieces();
+        ArrayList<String> blackPieces = node.getBlackPieces();
+        boolean a1Castling = node.getA1Castling();
+        boolean h1Castling = node.getH1Castling();
+        boolean a8Castling = node.getA8Castling();
+        boolean h8Castling = node.getH8Castling();
+        boolean modelIsWhite = node.getWhiteMove();
+        int moveCount100 = node.getMoveCount100();
+        String enPassantSquareString = node.getEnPassantSquareString();
+        //Get all the moves from the specific noce
+        ArrayList<ArrayList<String>> movesFromNode = AllMoves(node.getBoard(), node.getWhiteMove(), node.getWhitePieces(), node.getBlackPieces(), node.getEnPassantSquareString(), node.getA1Castling(), node.getH1Castling(), node.getA8Castling(), node.getH8Castling());
+        ArrayList<TreeNode> nodeChildren = new ArrayList<>();
+        //Assign children of node to list
+        for (ArrayList<String> moveList: movesFromNode) {
+            for  (int i = 1; i < moveList.size(); i++) {
+                Board tempBoard = node.getBoard();
+                //Simulate move on board
+                String originSquareString = moveList.getFirst();
+                String destinationSquareString = moveList.get(i);
+                //Update board & piece lists
+                Square originSquare = StringToSquare(originSquareString);
+                char tempPieceSymbol = tempBoard.getPiece(originSquare.getRow(), originSquare.getCol());
+                ArrayList<String> newWhitePieces = new ArrayList<>();
+                ArrayList<String> newBlackPieces = new ArrayList<>();
+                if (destinationSquareString.equals("O-O") || destinationSquareString.equals("O-O-O")) {
+                    boolean tempA1Castling;
+                    boolean tempH1Castling;
+                    boolean tempA8Castling;
+                    boolean tempH8Castling;
+                    if (modelIsWhite) {
+                        newBlackPieces.addAll(blackPieces);
+                        tempA1Castling = false;
+                        tempH1Castling = false;
+                        tempA8Castling = a8Castling;
+                        tempH8Castling = h8Castling;
+                        final boolean tempKingsideCaslting = destinationSquareString.equals("O-O");
+                        int pieceIndex = 0;
+                        if (tempKingsideCaslting) {
+                            for (String piece : whitePieces) {
+                                if (!piece.equals("e1") && !piece.equals("h1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(0, 7, '.');
+                            tempBoard.setPiece(0, 6, 'K');
+                            tempBoard.setPiece(0, 5, 'R');
+                            tempBoard.setPiece(0, 4, '.');
+                            newWhitePieces.add("f1");
+                            newWhitePieces.add("g1");
+                        } else {
+                            for (String piece : whitePieces) {
+                                if (!piece.equals("e1") && !piece.equals("a1")) newWhitePieces.add(whitePieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(0, 4, '.');
+                            tempBoard.setPiece(0, 2, 'K');
+                            tempBoard.setPiece(0, 3, 'R');
+                            tempBoard.setPiece(0, 1, '.');
+                            tempBoard.setPiece(0, 0, '.');
+                            newWhitePieces.add("c1");
+                            newWhitePieces.add("d1");
+                        }
+                    }
+                    else {
+                        newWhitePieces.addAll(whitePieces);
+                        tempA8Castling = false;
+                        tempH8Castling = false;
+                        tempA1Castling = a1Castling;
+                        tempH1Castling = h1Castling;
+                        boolean tempKingsideCaslting = false;
+                        if (destinationSquareString.equals("O-O")) tempKingsideCaslting = true;
+                        int pieceIndex = 0;
+                        if (tempKingsideCaslting) {
+                            for (String piece : blackPieces) {
+                                if (!piece.equals("e8") && !piece.equals("h8")) newBlackPieces.add(blackPieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(7, 7, '.');
+                            tempBoard.setPiece(7, 6, 'k');
+                            tempBoard.setPiece(7, 5, 'r');
+                            tempBoard.setPiece(7, 4, '.');
+                            newBlackPieces.add("f8");
+                            newBlackPieces.add("g8");
+                        } else {
+                            for (String piece : blackPieces) {
+                                if (!piece.equals("a8") && !piece.equals("e8")) newBlackPieces.add(blackPieces.get(pieceIndex));
+                                pieceIndex++;
+                            }
+                            tempBoard.setPiece(7, 4, '.');
+                            tempBoard.setPiece(7, 2, 'k');
+                            tempBoard.setPiece(7, 3, 'r');
+                            tempBoard.setPiece(7, 1, '.');
+                            tempBoard.setPiece(7, 0, '.');
+                            newBlackPieces.add("c8");
+                            newBlackPieces.add("d8");
+                        }
+                    }
+                    nodeChildren.add(new TreeNode(tempBoard, modelIsWhite, null, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100+1, originSquareString, destinationSquareString, !modelIsWhite, GetHashString(tempBoard, null, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                }
+                //If non castling move picked
+                else {
+                    newWhitePieces.addAll(whitePieces);
+                    newBlackPieces.addAll(blackPieces);
+                    Square destinationSquare = StringToSquare(destinationSquareString);
+                    //If white piece captured
+                    if (Character.isUpperCase(tempBoard.getPiece(destinationSquare.getRow(), destinationSquare.getCol()))) {
+                        newWhitePieces.remove(destinationSquareString);
+                    }
+                    //If black piece captured
+                    else if (Character.isLowerCase(tempBoard.getPiece(destinationSquare.getRow(), destinationSquare.getCol()))) {
+                        newBlackPieces.remove(destinationSquareString);
+                    }
+                    //Check for En passant captures
+                    if ((destinationSquareString.equals(enPassantSquareString) && (Character.toLowerCase(tempPieceSymbol) == 'p'))) {
+                        //En passant was picked
+                        //If player is white, the pawn to en passant is 1 square down from the en passant square
+                        if (modelIsWhite) {
+                            tempBoard.setPiece(destinationSquare.getRow() - 1, destinationSquare.getCol(), '.');
+                            newBlackPieces.remove(SquareToString(new Square(destinationSquare.getRow()-1, destinationSquare.getCol())));
+                        }
+                        else {
+                            tempBoard.setPiece(destinationSquare.getRow()+1, destinationSquare.getCol(), '.');
+                            newWhitePieces.remove(SquareToString(new Square(destinationSquare.getRow()+1, destinationSquare.getCol())));
+                        }
+                        tempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), tempPieceSymbol);
+                        tempBoard.setPiece(originSquare.getRow(), originSquare.getCol(), '.');
+                    }
+                    else {
+                        //Normal move was picked
+                        tempBoard.setPiece(originSquare.getRow(), originSquare.getCol(), '.');
+                        tempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), tempPieceSymbol);
+                    }
+                    //Update enPassantSquare
+                    String tempEnPassantSquareString;
+                    if (tempPieceSymbol == 'P' && originSquare.getRow() == 1 && destinationSquare.getRow() == 3)
+                        tempEnPassantSquareString = CoordinateToString(2, originSquare.getCol());
+                    else if (tempPieceSymbol == 'p' && originSquare.getRow() == 6 && destinationSquare.getRow() == 4)
+                        tempEnPassantSquareString = CoordinateToString(5, originSquare.getCol());
+                    else tempEnPassantSquareString = null;
+                    //Update castling rights
+                    boolean tempA1Castling = a1Castling;
+                    boolean tempH1Castling = h1Castling;
+                    boolean tempA8Castling = a8Castling;
+                    boolean tempH8Castling = h8Castling;
+                    if (tempPieceSymbol == 'K') {
+                        tempA1Castling = false;
+                        tempH1Castling = false;
+                    }
+                    else if (tempPieceSymbol == 'k') {
+                        tempA8Castling = false;
+                        tempH8Castling = false;
+                    }
+                    if (originSquare.getRow() == 0 && originSquare.getCol() == 0) tempA1Castling = false;
+                    else if (originSquare.getRow() == 0 && originSquare.getCol() == 7) tempH1Castling = false;
+                    else if (originSquare.getRow() == 7 && originSquare.getCol() == 0) tempA8Castling = false;
+                    else if (originSquare.getRow() == 7 && originSquare.getCol() == 7) tempH8Castling = false;
+                    if (destinationSquareString.equals("a1")) tempA1Castling = false;
+                    else if (destinationSquareString.equals("h1")) tempH1Castling = false;
+                    else if (destinationSquareString.equals("a8")) tempA8Castling = false;
+                    else if (destinationSquareString.equals("h8")) tempH8Castling = false;
+                    //Update newWhitePieces + newBlackPieces
+                    int pieceCount = 0;
+                    if (!modelIsWhite) {
+                        for (String piece : newBlackPieces) {
+                            if (piece.equals(originSquareString)) break;
+                            else pieceCount++;
+                        }
+                        newBlackPieces.remove(pieceCount);
+                        newBlackPieces.add(destinationSquareString);
+                    }
+                    else {
+                        for (String piece : newWhitePieces) {
+                            if (piece.equals(originSquareString)) break;
+                            else pieceCount++;
+                        }
+                        newWhitePieces.remove(pieceCount);
+                        newWhitePieces.add(destinationSquareString);
+                    }
+                    //Handle Promotion
+                    if ((tempPieceSymbol == 'P' && destinationSquare.getRow() == 7) || (tempPieceSymbol == 'p' && destinationSquare.getRow() == 0)) {
+                        char[] promotionOptions = {'Q', 'R', 'B', 'N'};
+                        for (char piece : promotionOptions) {
+                            Board tempTempBoard = CopyBoard(tempBoard);
+                            if (modelIsWhite) tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), piece);
+                            else tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), Character.toLowerCase(piece));
+                            nodeChildren.add(new TreeNode(tempBoard, modelIsWhite, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100+1, originSquareString, destinationSquareString, !modelIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                        }
+                    }
+                    nodeChildren.add(new TreeNode(tempBoard, modelIsWhite, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100+1, originSquareString, destinationSquareString, !modelIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                }
+            }
+        }
+        //By now a node has all it's possible next moves stored in nodeChildren.
+
+
+
+    }
+
+    public static String GetHashString(Board board, String enPassantSquareString, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, boolean whiteMovesNext) {
+        //Get required variables
+        StringBuilder stringBuilder = new StringBuilder();
+        //Get the board position currently
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                stringBuilder.append(board.getPiece(row, col));
+            }
+        }
+        stringBuilder.append(Objects.requireNonNullElse(enPassantSquareString, "null"));
+        if (a1Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (h1Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (a8Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (h8Castling) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        if (whiteMovesNext) stringBuilder.append("1");
+        else stringBuilder.append("0");
+        return stringBuilder.toString();
     }
 }
