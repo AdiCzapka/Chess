@@ -13,6 +13,8 @@ import Tree.*;
 
 public class Main {
 
+    public static Integer counter = 0;
+
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
         r -> {
@@ -32,29 +34,60 @@ public class Main {
 //            if (userChoice.equals("1")) {StartPregame(); valid = true;}
 //            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
 //        }
+        ArrayList<HashMap<String,Tree>> hashMapList = new ArrayList<HashMap<String,Tree>>();
         HashMap<String, Tree> hashMap = new HashMap<>();
         Board board = new Board();
         //Set up gamestate
         String enPassantSquareString = null;
+        int depth = 0;
         ArrayList<String> whitePieces = new ArrayList<>();
         whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1"); whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
         whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
+        whitePieces.add("d1");
         ArrayList<String> blackPieces = new ArrayList<>();
         blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
         blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
+        blackPieces.add("e2");
         boolean a1Castling = true;
         boolean h1Castling = true;
         boolean a8Castling = true;
         boolean h8Castling = true;
         int moveCount100 = 0;
-        boolean playerIsWhite = true;
+        boolean playerIsWhite = false;
         TreeNode root = new TreeNode(board, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, true, GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true), "parenthash");
         hashMap = CreateGameTreeFromNode(root, hashMap, "ParentHash");
-        for (int i = 0; i < hashMap.get(GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true)).getChildren().size(); i++) {
-            TreeNode childNode = hashMap.get(GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true)).getChildren().get(i);
+        System.out.println(counter);
+        hashMapList.add(hashMap);
+        hashMap = new HashMap<String, Tree>();
+        //depth 1
+        for (int i = 0; i < hashMapList.get(depth).get(GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true)).getChildren().size(); i++) {
+            TreeNode childNode = hashMapList.get(depth).get(GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true)).getChildren().get(i);
             hashMap = CreateGameTreeFromNode(childNode, hashMap, "parenthash");
         }
-
+        System.out.println(counter);
+        depth++;
+        hashMapList.add(hashMap);
+        hashMap = new HashMap<String, Tree>();
+        //depth 2
+        for (Tree tree : hashMapList.get(depth).values()) {
+            for (TreeNode childNode : tree.getChildren()) {
+                hashMap = CreateGameTreeFromNode(childNode, hashMap, "parenthash");
+            }
+        }
+        System.out.println(counter);
+        hashMapList.add(hashMap);
+        hashMap = new HashMap<String, Tree>();
+        depth++;
+        //depth 3
+        for (Tree tree : hashMapList.get(depth).values()) {
+            for (TreeNode childNode : tree.getChildren()) {
+                hashMap = CreateGameTreeFromNode(childNode, hashMap, "parenthash");
+            }
+        }
+        System.out.println(counter);
+        hashMapList.add(hashMap);
+        hashMap = new HashMap<String, Tree>();
+        System.out.println("fafnawnikan");
     }
     public static void StartPregame() throws InterruptedException {
         BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
@@ -2498,11 +2531,12 @@ public class Main {
         int moveCount100 = node.getMoveCount100();
         String enPassantSquareString = node.getEnPassantSquareString();
         //Get all the moves from the specific noce
-        ArrayList<ArrayList<String>> opponentMovesFromNode = AllMoves(node.getBoard(), !node.getWhiteMove(), node.getWhitePieces(), node.getBlackPieces(), node.getEnPassantSquareString(), node.getA1Castling(), node.getH1Castling(), node.getA8Castling(), node.getH8Castling());
+        ArrayList<ArrayList<String>> opponentMovesFromNode = AllMoves(node.getBoard(), modelIsWhite, node.getWhitePieces(), node.getBlackPieces(), node.getEnPassantSquareString(), node.getA1Castling(), node.getH1Castling(), node.getA8Castling(), node.getH8Castling());
         ArrayList<TreeNode> nodeChildren = new ArrayList<>();
         //Assign children of node to list
         for (ArrayList<String> moveList: opponentMovesFromNode) {
             for  (int i = 1; i < moveList.size(); i++) {
+                counter++;
                 Board tempBoard = CopyBoard(node.getBoard());
                 //Simulate move on board
                 String originSquareString = moveList.getFirst();
@@ -2672,10 +2706,12 @@ public class Main {
                             Board tempTempBoard = CopyBoard(tempBoard);
                             if (modelIsWhite) tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), piece);
                             else tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), Character.toLowerCase(piece));
-                            nodeChildren.add(new TreeNode(tempBoard, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100+1, modelIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                            nodeChildren.add(new TreeNode(tempTempBoard, tempEnPassantSquareString, new ArrayList<>(newWhitePieces), new ArrayList<>(newBlackPieces), tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100+1, modelIsWhite, GetHashString(tempTempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
                         }
                     }
-                    nodeChildren.add(new TreeNode(tempBoard, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100+1, modelIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                    else {
+                        nodeChildren.add(new TreeNode(tempBoard, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, moveCount100 + 1, modelIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                    }
                 }
             }
         }
