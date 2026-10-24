@@ -1,4 +1,8 @@
-QueenActivity 10.867520617668038
-RookActivity 10.284504416448378
-PointsSurroundingKing 8.950458723462507
+QueenActivity 10
+RookActivity 10
+PointsSurroundingKing 10
+QueenActivityAdvantage 10
+RookActivityAdvantage 10
+PointsSurroundingKingAdvantage 10
+MaterialAdvantage 10
 Checkmate 1000.0

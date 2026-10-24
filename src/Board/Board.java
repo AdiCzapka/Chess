@@ -19,7 +19,7 @@ public class Board {
                 else if ((i == 0 && (j == 2 || j == 5))) board[i][j] = 'B';
                 else if ((i == 7 && (j == 2 || j == 5))) board[i][j] = 'b';
                 else if (i == 0 && j == 3) board[i][j] = 'Q';
-                else if (i == 7 && j == 3) board[i][j] = 'q';
+                //else if (i == 7 && j == 3) board[i][j] = 'q';
                 else if (i == 0 && j == 4) board[i][j] = 'K';
                 else if (i == 7 && j == 4) board[i][j] = 'k';
                 else if (i == 1) board[i][j] = 'P';
