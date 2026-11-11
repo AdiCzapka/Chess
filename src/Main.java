@@ -24,51 +24,52 @@ public class Main {
         });
 
     public static void main(String[] args) throws InterruptedException {
-//        BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
-//        GUI gui = new GUI(blockingQueue);
-//        boolean valid = false;
-//        while (!valid) {
-//            System.out.println("1. Play against the best model. 2. Train model");
-//            Scanner input = new Scanner(System.in);
-//            String userChoice = input.nextLine();
-//            if (userChoice.equals("1")) {StartPregame(); valid = true;}
-//            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
-//        }
-        ArrayList<HashMap<String,Tree>> hashMapList = new ArrayList<HashMap<String,Tree>>();
-        HashMap<String, Tree> hashMap = new HashMap<>();
-        Board board = new Board();
-        //Set up gamestate
-        String enPassantSquareString = null;
-        int depth = 0;
-        ArrayList<String> whitePieces = new ArrayList<>();
-        whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1");whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
-        whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
-        ArrayList<String> blackPieces = new ArrayList<>();
-        blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
-        blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); //blackPieces.add("d8");
-        blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
-        boolean a1Castling = true;
-        boolean h1Castling = true;
-        boolean a8Castling = true;
-        boolean h8Castling = true;
-        int moveCount100 = 0;
-        boolean playerIsWhite = false;
+        BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
+        GUI gui = new GUI(blockingQueue);
+        boolean valid = false;
+        while (!valid) {
+            System.out.println("1. Play against the best model. 2. Train model");
+            Scanner input = new Scanner(System.in);
+            String userChoice = input.nextLine();
+            if (userChoice.equals("1")) {StartPregame(); valid = true;}
+            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
+        }
+//        Board board = new Board();
+//        //Set up gamestate
+//        String enPassantSquareString = null;
+//        int depth = 0;
+//        ArrayList<String> whitePieces = new ArrayList<>();
+//        whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1");whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
+//        whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
+//        ArrayList<String> blackPieces = new ArrayList<>();
+//        blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
+//        blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
+//        boolean a1Castling = true;
+//        boolean h1Castling = true;
+//        boolean a8Castling = true;
+//        boolean h8Castling = true;
+//        int moveCount100 = 0;
+//        boolean playerIsWhite = false;
+//
+//        ArrayList<ArrayList<HashMap<String,Tree>>> hashMapList = new ArrayList<ArrayList<HashMap<String,Tree>>>();
+//        ArrayList<HashMap<String, Tree>> hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+//
+//
 //        TreeNode root = new TreeNode(board, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, true, GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true), "parenthash");
-//        hashMap = CreateGameTreeFromNode(root, hashMap, "ParentHash");
-//        System.out.println(counter);
-//        hashMapList.add(hashMap);
-//        hashMap = new HashMap<String, Tree>();
+//        hashMapLayer = CreateGameTreeFromNode(root, hashMapLayer, "ParentHash");
+//        hashMapList.add(hashMapLayer);
+//        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
 //        //depth 1
-//        for (Tree tree : hashMapList.get(depth).values()) {
-//            for (TreeNode childNode : tree.getChildren()) {
-//                hashMap = CreateGameTreeFromNode(childNode, hashMap, "parenthash");
+//        for (int i = 0; i < hashMapList.get(depth).size(); i++) {
+//            for (Tree tree : hashMapList.get(depth).get(i).values()) {
+//                for (TreeNode childNode : tree.getChildren()) {
+//                    hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
+//                }
 //            }
 //        }
-//        System.out.println(counter);
 //        depth++;
-//        hashMapList.add(hashMap);
-//        hashMap = new HashMap<String, Tree>();
-        System.out.println(CalculateScoreOfPosition(board, false, whitePieces, blackPieces, "e2", "e2", 'x', new PlayingModel(10,10,10,10,10,10,10,10), null, true, true, true, true));
+//        hashMapList.add(hashMapLayer);
+//        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
     }
     public static void StartPregame() throws InterruptedException {
         BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
@@ -887,12 +888,15 @@ public class Main {
                         Square moveSquare = StringToSquare(square);
                         Board tempBoard = CopyBoard(board);
                         //Check it's empty
-                        if (board.getPiece(moveSquare.getRow(), moveSquare.getCol()) == '.') {
+                        if (square.equals("b1")) {
+                            if (board.getPiece(moveSquare.getRow(), moveSquare.getCol()) != '.') {biggerCheck = true;}
+                        }
+                        else if (board.getPiece(moveSquare.getRow(), moveSquare.getCol()) == '.') {
                             //Simulate the move and check if king would be in check
                             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
                             tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'K');
                             newWhitePieces = CreateNewPieceList(tempBoard, whitePieces, moveSquare);
-                            check = CheckIfCheck(tempBoard, newWhitePieces, blackPieces, toBeMoved);
+                            check = CheckIfCheck(tempBoard, newWhitePieces, blackPieces, moveSquare);
                             if (check) biggerCheck  = true;
                         }
                         else biggerCheck = true;
@@ -913,7 +917,7 @@ public class Main {
                             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
                             tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'K');
                             newWhitePieces = CreateNewPieceList(tempBoard, whitePieces, moveSquare);
-                            check = CheckIfCheck(tempBoard, newWhitePieces, blackPieces, toBeMoved);
+                            check = CheckIfCheck(tempBoard, newWhitePieces, blackPieces, moveSquare);
                             if (check) biggerCheck  = true;
                         }
                         else biggerCheck = true;
@@ -935,12 +939,15 @@ public class Main {
                         Square moveSquare = StringToSquare(square);
                         Board tempBoard = CopyBoard(board);
                         //Check it's empty
-                        if (board.getPiece(moveSquare.getRow(), moveSquare.getCol()) == '.') {
+                        if (square.equals("b8")) {
+                            if (board.getPiece(moveSquare.getRow(), moveSquare.getCol()) != '.') {biggerCheck = true;}
+                        }
+                        else if (board.getPiece(moveSquare.getRow(), moveSquare.getCol()) == '.') {
                             //Simulate the move and check if king would be in check
                             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
                             tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'k');
                             newBlackPieces = CreateNewPieceList(tempBoard, blackPieces, moveSquare);
-                            check = CheckIfCheck(tempBoard, whitePieces, newBlackPieces, toBeMoved);
+                            check = CheckIfCheck(tempBoard, whitePieces, newBlackPieces, moveSquare);
                             if (check) biggerCheck  = true;
                         }
                         else biggerCheck = true;
@@ -961,7 +968,7 @@ public class Main {
                             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
                             tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'k');
                             newBlackPieces = CreateNewPieceList(tempBoard, blackPieces, moveSquare);
-                            check = CheckIfCheck(tempBoard, whitePieces, newBlackPieces, toBeMoved);
+                            check = CheckIfCheck(tempBoard, whitePieces, newBlackPieces, moveSquare);
                             if (check) biggerCheck = true;
                         }
                         else biggerCheck = true;
@@ -1789,7 +1796,7 @@ public class Main {
         else if (originSquareString.equals("h1")) gameState.setH1Castling(false);
         else if (originSquareString.equals("a8")) gameState.setA8Castling(false);
         else if (originSquareString.equals("h8")) gameState.setH8Castling(false);
-        else if (destinationSquareString.equals("a1")) gameState.setA1Castling(false);
+        if (destinationSquareString.equals("a1")) gameState.setA1Castling(false);
         else if (destinationSquareString.equals("h1")) gameState.setH1Castling(false);
         else if (destinationSquareString.equals("a8")) gameState.setA8Castling(false);
         else if (destinationSquareString.equals("h8")) gameState.setH8Castling(false);
@@ -2309,7 +2316,7 @@ public class Main {
         return positionValues;
     }
 
-    public static HashMap<String, Tree> CreateGameTreeFromNode(TreeNode node, HashMap<String, Tree> gameTree, String parentHash) {
+    public static ArrayList<HashMap<String, Tree>> CreateGameTreeFromNode(TreeNode node, ArrayList<HashMap<String, Tree>> treeLayer, String parentHash) {
         ArrayList<String> whitePieces = node.getWhitePieces();
         ArrayList<String> blackPieces = node.getBlackPieces();
         boolean a1Castling = node.getA1Castling();
@@ -2507,8 +2514,10 @@ public class Main {
         //By now a node has all it's possible next moves stored in nodeChildren.
         //Create a tree
         Tree tree = new Tree(node, nodeChildren, null);
+        HashMap<String, Tree> gameTree = new HashMap<>();
         gameTree.put(tree.getRoot().getHashedPosition(), tree);
-        return gameTree;
+        treeLayer.add(gameTree);
+        return treeLayer;
     }
     public static String GetHashString(Board board, String enPassantSquareString, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, boolean whiteMovesNext) {
         //Get required variables
