@@ -127,6 +127,7 @@ public class Main {
                 }
             }
             GameState gameState = new GameState(board, playerIsWhite, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+            SelfHashPosition(gameState);
             if (!pressedReplayAtColourSelection) {
                 gameState = PlayGame(gameState, gui);
                 if (gameState.getTurnCounter() != -1) {
@@ -452,8 +453,21 @@ public class Main {
             tempBoard = CopyBoard(board);
             Square moveSquare = StringToSquare(move);
             tempBoard.setPiece(toBeMoved.getRow(), toBeMoved.getCol(), '.');
-            if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'P');
-            else  tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'p');
+            if (move.equals(enPassantSquare)) {
+                if (pieceIsWhite) {
+                    tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'P');
+                    tempBoard.setPiece(moveSquare.getRow() - 1, moveSquare.getCol(), '.');
+                }
+                else  {
+                    tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'p');
+                    tempBoard.setPiece(moveSquare.getRow() + 1, moveSquare.getCol(), '.');
+                }
+
+            }
+            else {
+                if (pieceIsWhite) tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'P');
+                else tempBoard.setPiece(moveSquare.getRow(), moveSquare.getCol(), 'p');
+            }
             if (pieceIsWhite) {
                 newWhitePieces = CreateNewPieceList(tempBoard, whitePieces, moveSquare);
                 newBlackPieces.addAll(blackPieces);
@@ -1231,7 +1245,11 @@ public class Main {
         boolean h1Castling = gameState.getH1Castling();
         boolean a8Castling = gameState.getA8Castling();
         boolean h8Castling = gameState.getH8Castling();
-        boolean whiteMovesNext = gameState.getPlayerIsWhite();
+        boolean whiteMovesNext;
+        if (gameState.getTurnCounter() == 0) {
+            whiteMovesNext = gameState.getWhiteMove();
+        }
+        else {whiteMovesNext = !gameState.getWhiteMove();}
         ArrayList<Hash> hashTable = gameState.getHashTable();
         StringBuilder gameNotation = gameState.getGameNotation();
         String hash = GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, whiteMovesNext);
@@ -1333,6 +1351,7 @@ public class Main {
                 StringBuilder gameNotation = new StringBuilder();
                 int turnCounter = 0;
                 GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                SelfHashPosition(gameState);
                 boolean finished = false;
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
                 while (!finished) {
@@ -1403,6 +1422,7 @@ public class Main {
                 StringBuilder gameNotation = new StringBuilder();
                 int turnCounter = 0;
                 GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                SelfHashPosition(gameState);
                 boolean finished = false;
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
                 while (!finished) {
@@ -1511,7 +1531,7 @@ public class Main {
             stringBuilder.append("PointsSurroundingKing " + currentModel.getPointsSurroundingKing() + "\n");
             stringBuilder.append("QueenActivityAdvantage " + currentModel.getQueenActivityAdvantage() + "\n");
             stringBuilder.append("RookActivityAdvantage " + currentModel.getRookActivityAdvantage() + "\n");
-            stringBuilder.append("PointsSurroundingKingAdvantage " + currentModel.getQueenActivityAdvantage() + "\n");
+            stringBuilder.append("PointsSurroundingKingAdvantage " + currentModel.getPointsSurroundingKingAdvantage() + "\n");
             stringBuilder.append("MaterialAdvantage " +  currentModel.getMaterialAdvantage() + "\n");
             stringBuilder.append("Checkmate " + currentModel.getCheckmate());
             try (BufferedWriter currentWriter = new BufferedWriter(new FileWriter("CurrentModel.txt"))) {
@@ -1744,6 +1764,9 @@ public class Main {
         gameState.setBlackPieces(newBlackPieces);
         return gameState;
     }
+
+
+
     public static GameState UpdateBoard(GameState gameState) {
         String originSquareString = gameState.getOriginSquareString();
         Square originSquare = StringToSquare(originSquareString);
@@ -1757,7 +1780,7 @@ public class Main {
         if ((destinationSquareString.equals(gameState.getEnPassantSquareString())) && (Character.toLowerCase(pieceSymbol) == 'p')) {
             //En passant was picked
             //If player is white, the pawn to en passant is 1 square down from the en passant square
-            if (gameState.getPlayerIsWhite()) {
+            if (gameState.getWhiteMove()) {
                 board.setPiece(destinationSquare.getRow() - 1, destinationSquare.getCol(), '.');
             }
             else {
@@ -1772,6 +1795,10 @@ public class Main {
         gameState.setBoard(board);
         return gameState;
     }
+
+
+
+
     public static GameState UpdateEnPassantSquareString(GameState gameState) {
         Board board = gameState.getBoard();
         Square originSquare = StringToSquare(gameState.getOriginSquareString());
@@ -1792,7 +1819,7 @@ public class Main {
         char pieceSymbol = gameState.getPieceSymbol();
         if (pieceSymbol == 'K') { gameState.setA1Castling(false); gameState.setH1Castling(false); }
         else if (pieceSymbol == 'k') { gameState.setA8Castling(false); gameState.setH8Castling(false); }
-        else if (originSquareString.equals("a1")) gameState.setA1Castling(false);
+        if (originSquareString.equals("a1")) gameState.setA1Castling(false);
         else if (originSquareString.equals("h1")) gameState.setH1Castling(false);
         else if (originSquareString.equals("a8")) gameState.setA8Castling(false);
         else if (originSquareString.equals("h8")) gameState.setH8Castling(false);
@@ -2583,8 +2610,7 @@ public class Main {
 
     public static ModelEvaluation CalculateScoreOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, String originSquareString, String destinationSquareString, char piecePromotionSymbol, PlayingModel model, String enPassantSquareString, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling) throws InterruptedException {
         //Calculate the score of the position
-        double variablePositionScore = EvaluateVariablesOfPosition(board, true, whitePieces, blackPieces, model, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling);
-        if (!modelIsWhite) {variablePositionScore = -variablePositionScore;}
+        double variablePositionScore = EvaluateVariablesOfPosition(board, modelIsWhite, whitePieces, blackPieces, model, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling);
         double checkmateScore = CalculateCheckmate(board, modelIsWhite, whitePieces, blackPieces, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, destinationSquareString);
         //Calculate score for position
         double score = (variablePositionScore + (model.getCheckmate()*checkmateScore));
@@ -2592,12 +2618,27 @@ public class Main {
         return positionValue;
     }
     public static double EvaluateVariablesOfPosition(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces, PlayingModel model, String enPassantSquareString, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling) {
-        double queenActivityAdvantageScore = (CalculateQueenActivity(board, true, whitePieces, blackPieces) - CalculateQueenActivity(board, false, whitePieces, blackPieces));
-        double rookActivityAdvantageScore = (CalculateRookActivity(board, true, whitePieces, blackPieces) - CalculateRookActivity(board, false, whitePieces, blackPieces));
-        double pointsSurroundingKingAdvantageScore = (CalculatePointsSurroundingKing(board, true, whitePieces, blackPieces) - CalculatePointsSurroundingKing(board, false, whitePieces, blackPieces));
-        double materialAdvantage = (CalculateMaterial(board, true, whitePieces, blackPieces) - CalculateMaterial(board, false, whitePieces, blackPieces));
-        return ((model.getQueenActivityAdvantage()*queenActivityAdvantageScore) + (model.getRookActivityAdvantage()*rookActivityAdvantageScore) + (model.getPointsSurroundingKingAdvantage()*pointsSurroundingKingAdvantageScore) + (model.getMaterialAdvantage()*materialAdvantage));
+        double queenActivity = CalculateQueenActivity(board, modelIsWhite, whitePieces, blackPieces);
+        double enemyQueenActivity = CalculateQueenActivity(board, !modelIsWhite, whitePieces, blackPieces);
+        double rookActivity = CalculateRookActivity(board, modelIsWhite, whitePieces, blackPieces);
+        double enemyRookActivity = CalculateRookActivity(board, !modelIsWhite, whitePieces, blackPieces);
+        double pointsSurroundingKing = CalculatePointsSurroundingKing(board, modelIsWhite, whitePieces, blackPieces);
+        double enemyPointsSurroundingKing = CalculatePointsSurroundingKing(board, !modelIsWhite, whitePieces, blackPieces);
+        double material = CalculateMaterial(board, modelIsWhite, whitePieces, blackPieces);
+        double enemyMaterial = CalculateMaterial(board, !modelIsWhite, whitePieces, blackPieces);
 
+        double queenActivityAdvantageScore = queenActivity - enemyQueenActivity;
+        double rookActivityAdvantageScore = rookActivity - enemyRookActivity;
+        double pointsSurroundingKingAdvantageScore = pointsSurroundingKing - enemyPointsSurroundingKing;
+        double materialAdvantage = material - enemyMaterial;
+
+        return (model.getQueenActivity() * queenActivity)
+                + (model.getRookActivity() * rookActivity)
+                + (model.getPointsSurroundingKing() * pointsSurroundingKing)
+                + (model.getQueenActivityAdvantage() * queenActivityAdvantageScore)
+                + (model.getRookActivityAdvantage() * rookActivityAdvantageScore)
+                + (model.getPointsSurroundingKingAdvantage() * pointsSurroundingKingAdvantageScore)
+                + (model.getMaterialAdvantage() * materialAdvantage);
     }
     public static double CalculateQueenActivity(Board board, boolean modelIsWhite, ArrayList<String> whitePieces, ArrayList<String> blackPieces) {
         //Find square that queen is on. Add to move total. Return total
