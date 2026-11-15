@@ -27,8 +27,7 @@ public class GameState {
     char pieceSymbol = ' ';
     boolean whiteMove = true;
     boolean captureMade = false;
-    char piecePromotionSymbol = ' ';
-    char otherPiecePromotionSymbol = ' ';
+    char otherPiecePromotionSymbol = 'X';
 
 
     public GameState(Board board, boolean playerIsWhite, String enPassantSquareString, ArrayList<String> whitePieces, ArrayList<String> blackPieces, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, StringBuilder gameNotation, int turnCounter) {
@@ -76,7 +75,6 @@ public class GameState {
     public char getPieceSymbol() { return this.pieceSymbol; }
     public boolean getWhiteMove() { return this.whiteMove; }
     public boolean getCaptureMade() { return this.captureMade; }
-    public char getPiecePromotionSymbol() { return this.piecePromotionSymbol; }
     public char getOtherPiecePromotionSymbol() { return this.otherPiecePromotionSymbol; }
 
     public void setBoard(Board board) { this.board = board; }
@@ -102,6 +100,5 @@ public class GameState {
     public void setPieceSymbol(char pieceSymbol) { this.pieceSymbol = pieceSymbol; }
     public void setWhiteMove(boolean whiteMove) { this.whiteMove = whiteMove; }
     public void setCaptureMade(boolean captureMade) { this.captureMade = captureMade; }
-    public void setPiecePromotionSymbol(char piecePromotionSymbol) { this.piecePromotionSymbol = piecePromotionSymbol; }
     public void setOtherPiecePromotionSymbol(char otherPiecePromotionSymbol) { this.otherPiecePromotionSymbol = otherPiecePromotionSymbol; }
 }
