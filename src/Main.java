@@ -24,50 +24,58 @@ public class Main {
         });
 
     public static void main(String[] args) throws InterruptedException {
-        boolean valid = false;
-        while (!valid) {
-            System.out.println("1. Play against the best model. 2. Train model");
-            Scanner input = new Scanner(System.in);
-            String userChoice = input.nextLine();
-            if (userChoice.equals("1")) {StartPregame(); valid = true;}
-            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
-        }
-//        Board board = new Board();
-//        //Set up gamestate
-//        String enPassantSquareString = null;
-//        int depth = 0;
-//        ArrayList<String> whitePieces = new ArrayList<>();
-//        whitePieces.add("a1"); whitePieces.add("b1"); whitePieces.add("c1"); whitePieces.add("d1");whitePieces.add("e1"); whitePieces.add("f1"); whitePieces.add("g1"); whitePieces.add("h1");
-//        whitePieces.add("a2"); whitePieces.add("b2"); whitePieces.add("c2"); whitePieces.add("d2"); whitePieces.add("e2"); whitePieces.add("f2"); whitePieces.add("g2"); whitePieces.add("h2");
-//        ArrayList<String> blackPieces = new ArrayList<>();
-//        blackPieces.add("a7"); blackPieces.add("b7"); blackPieces.add("c7"); blackPieces.add("d7"); blackPieces.add("e7"); blackPieces.add("f7"); blackPieces.add("g7"); blackPieces.add("h7");
-//        blackPieces.add("a8"); blackPieces.add("b8"); blackPieces.add("c8"); blackPieces.add("d8"); blackPieces.add("e8"); blackPieces.add("f8"); blackPieces.add("g8"); blackPieces.add("h8");
-//        boolean a1Castling = true;
-//        boolean h1Castling = true;
-//        boolean a8Castling = true;
-//        boolean h8Castling = true;
-//        int moveCount100 = 0;
-//        boolean playerIsWhite = false;
-//
-//        ArrayList<ArrayList<HashMap<String,Tree>>> hashMapList = new ArrayList<ArrayList<HashMap<String,Tree>>>();
-//        ArrayList<HashMap<String, Tree>> hashMapLayer = new ArrayList<HashMap<String, Tree>>();
-//
-//
-//        TreeNode root = new TreeNode(board, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, true, GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, true), "parenthash");
-//        hashMapLayer = CreateGameTreeFromNode(root, hashMapLayer, "ParentHash");
-//        hashMapList.add(hashMapLayer);
-//        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
-//        //depth 1
-//        for (int i = 0; i < hashMapList.get(depth).size(); i++) {
-//            for (Tree tree : hashMapList.get(depth).get(i).values()) {
-//                for (TreeNode childNode : tree.getChildren()) {
-//                    hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
-//                }
-//            }
+//        boolean valid = false;
+//        while (!valid) {
+//            System.out.println("1. Play against the best model. 2. Train model");
+//            Scanner input = new Scanner(System.in);
+//            String userChoice = input.nextLine();
+//            if (userChoice.equals("1")) {StartPregame(); valid = true;}
+//            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
 //        }
-//        depth++;
-//        hashMapList.add(hashMapLayer);
-//        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+        String FEN = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
+        GameState gameState = LoadPosition(FEN);
+
+        Board board = gameState.getBoard();
+        String enPassantSquareString = gameState.getEnPassantSquareString();
+        int depth = 0;
+        ArrayList<String> whitePieces = gameState.getWhitePieces();
+        ArrayList<String> blackPieces = gameState.getBlackPieces();
+        boolean a1Castling = gameState.getA1Castling();
+        boolean h1Castling = gameState.getH1Castling();
+        boolean a8Castling = gameState.getA8Castling();
+        boolean h8Castling = gameState.getH8Castling();
+        int moveCount100 = gameState.getMoveCount100();
+        boolean whiteMove = gameState.getWhiteMove();
+        ArrayList<ArrayList<HashMap<String,Tree>>> hashMapList = new ArrayList<ArrayList<HashMap<String,Tree>>>();
+        ArrayList<HashMap<String, Tree>> hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+        TreeNode root = new TreeNode(board, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, !whiteMove, GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, whiteMove), "parenthash");
+        hashMapLayer = CreateGameTreeFromNode(root, hashMapLayer, "ParentHash");
+        hashMapList.add(hashMapLayer);
+        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+        int depth1 = counter;
+        System.out.println(depth1);
+        //depth 1
+        for (int i = 0; i < hashMapList.get(depth).size(); i++) {
+            for (Tree tree : hashMapList.get(depth).get(i).values()) {
+                for (TreeNode childNode : tree.getChildren()) {
+                    hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
+                }
+            }
+        }
+        int depth2 = counter - depth1;
+        System.out.println(depth2);
+        depth++;
+        hashMapList.add(hashMapLayer);
+        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+        for (int i = 0; i < hashMapList.get(depth).size(); i++) {
+            for (Tree tree : hashMapList.get(depth).get(i).values()) {
+                for (TreeNode childNode : tree.getChildren()) {
+                    hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
+                }
+            }
+        }
+        int depth3 = counter - depth2 - depth1;
+        System.out.println(depth3);
     }
     public static void StartPregame() throws InterruptedException {
         BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
@@ -124,7 +132,7 @@ public class Main {
                     break;
                 }
             }
-            GameState gameState = new GameState(board, playerIsWhite, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+            GameState gameState = new GameState(board, playerIsWhite, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter, true);
             SelfHashPosition(gameState);
             if (!pressedReplayAtColourSelection) {
                 gameState = PlayGame(gameState, gui);
@@ -1269,6 +1277,84 @@ public class Main {
         }
         return gameState;
     }
+    public static GameState LoadPosition(String FEN) {
+        //Take in a FEN position to load in
+        String[] splitFEN = FEN.split(" ");
+        //First get the board position and add to piece lists
+        ArrayList<String> whitePieces = new ArrayList<>();
+        ArrayList<String> blackPieces = new ArrayList<>();
+        Board board = new Board();
+        String[] boardRows = splitFEN[0].split("/");
+        int row = 8;
+        for (String boardRow : boardRows) {
+            int column = 0;
+            row--;
+            for (int i = 0; i < boardRow.length(); i++) {
+                switch (boardRow.charAt(i)) {
+                    case 'P':
+                    case 'R':
+                    case 'N':
+                    case 'B':
+                    case 'Q':
+                    case 'K':
+                        board.setPiece(row, column, boardRow.charAt(i));
+                        whitePieces.add(CoordinateToString(row, column));
+                        column++;
+                        break;
+                    case 'p':
+                    case 'r':
+                    case 'n':
+                    case 'b':
+                    case 'q':
+                    case 'k':
+                        board.setPiece(row, column, boardRow.charAt(i));
+                        blackPieces.add(CoordinateToString(row, column));
+                        column++;
+                        break;
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                        int space = Integer.parseInt(Character.toString(boardRow.charAt(i)));
+                        for (int j = 0; j < space; j++) {
+                            board.setPiece(row, column, '.');
+                            column++;
+                        }
+                }
+            }
+        }
+        //Now onto who moves next
+        boolean whiteMove = false;
+        if (splitFEN[1].equals("w")) {whiteMove = true;}
+
+        //Onto castling
+        boolean a1Castling = false;
+        boolean h1Castling = false;
+        boolean a8Castling = false;
+        boolean h8Castling = false;
+        if (splitFEN[2].contains("Q")) {a1Castling = true;}
+        if (splitFEN[2].contains("q")) {a8Castling = true;}
+        if (splitFEN[2].contains("K")) {h1Castling = true;}
+        if (splitFEN[2].contains("k")) {h8Castling = true;}
+
+        //En passant
+        String enPassantSquareString;
+        if (!splitFEN[3].equals("-")) {enPassantSquareString = splitFEN[3];}
+        else {enPassantSquareString = null;}
+
+        //Halfmoves
+        int moveCount100 = Integer.parseInt(splitFEN[4]);
+
+        //Full moves
+        int turnCounter = Integer.parseInt(splitFEN[5]);
+
+        GameState gameState = new GameState(board, whiteMove, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, new ArrayList<>(), new StringBuilder(), turnCounter, whiteMove);
+        return gameState;
+    }
     public static void TrainModel() {
         while (true) {
             //Initially just testing an idea. Hence model has 3 parameters, and a depth of 1
@@ -1308,7 +1394,7 @@ public class Main {
                 ArrayList<Hash> hashTable = new ArrayList<>();
                 StringBuilder gameNotation = new StringBuilder();
                 int turnCounter = 0;
-                GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter, true);
                 SelfHashPosition(gameState);
                 boolean finished = false;
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
@@ -1379,7 +1465,7 @@ public class Main {
                 ArrayList<Hash> hashTable = new ArrayList<>();
                 StringBuilder gameNotation = new StringBuilder();
                 int turnCounter = 0;
-                GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter);
+                GameState gameState = new GameState(board, modelIsWhite, enPassantSquare, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, hashTable, gameNotation, turnCounter, true);
                 SelfHashPosition(gameState);
                 boolean finished = false;
                 //Run the game loop until checkmate (done this way to avoid my other implementation which ran into stack overflow)
@@ -1722,9 +1808,6 @@ public class Main {
         gameState.setBlackPieces(newBlackPieces);
         return gameState;
     }
-
-
-
     public static GameState UpdateBoard(GameState gameState) {
         String originSquareString = gameState.getOriginSquareString();
         Square originSquare = StringToSquare(originSquareString);
@@ -1753,10 +1836,6 @@ public class Main {
         gameState.setBoard(board);
         return gameState;
     }
-
-
-
-
     public static GameState UpdateEnPassantSquareString(GameState gameState) {
         Board board = gameState.getBoard();
         Square originSquare = StringToSquare(gameState.getOriginSquareString());
@@ -2298,7 +2377,6 @@ public class Main {
         }
         return positionValues;
     }
-
     public static ArrayList<HashMap<String, Tree>> CreateGameTreeFromNode(TreeNode node, ArrayList<HashMap<String, Tree>> treeLayer, String parentHash) {
         ArrayList<String> whitePieces = node.getWhitePieces();
         ArrayList<String> blackPieces = node.getBlackPieces();
@@ -2306,17 +2384,16 @@ public class Main {
         boolean h1Castling = node.getH1Castling();
         boolean a8Castling = node.getA8Castling();
         boolean h8Castling = node.getH8Castling();
-        boolean modelIsWhite = !node.getWhiteMove();
+        boolean moverIsWhite = !node.getWhiteMove();
         String enPassantSquareString = node.getEnPassantSquareString();
         //Get all the moves from the specific noce
-        ArrayList<ArrayList<String>> opponentMovesFromNode = AllMoves(node.getBoard(), modelIsWhite, node.getWhitePieces(), node.getBlackPieces(), node.getEnPassantSquareString(), node.getA1Castling(), node.getH1Castling(), node.getA8Castling(), node.getH8Castling());
+        ArrayList<ArrayList<String>> opponentMovesFromNode = AllMoves(node.getBoard(), moverIsWhite, node.getWhitePieces(), node.getBlackPieces(), node.getEnPassantSquareString(), node.getA1Castling(), node.getH1Castling(), node.getA8Castling(), node.getH8Castling());
         ArrayList<TreeNode> nodeChildren = new ArrayList<>();
         //Assign children of node to list
         for (ArrayList<String> moveList: opponentMovesFromNode) {
             for  (int i = 1; i < moveList.size(); i++) {
                 int tempMoveCount100 = node.getMoveCount100();
                 boolean resetMoveCount = false;
-                counter++;
                 Board tempBoard = CopyBoard(node.getBoard());
                 //Simulate move on board
                 String originSquareString = moveList.getFirst();
@@ -2331,7 +2408,7 @@ public class Main {
                     boolean tempH1Castling;
                     boolean tempA8Castling;
                     boolean tempH8Castling;
-                    if (modelIsWhite) {
+                    if (moverIsWhite) {
                         newBlackPieces.addAll(blackPieces);
                         tempA1Castling = false;
                         tempH1Castling = false;
@@ -2398,7 +2475,7 @@ public class Main {
                             newBlackPieces.add("d8");
                         }
                     }
-                    nodeChildren.add(new TreeNode(tempBoard, null, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, tempMoveCount100+1, modelIsWhite, GetHashString(tempBoard, null, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                    nodeChildren.add(new TreeNode(tempBoard, null, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, tempMoveCount100+1, moverIsWhite, GetHashString(tempBoard, null, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !moverIsWhite), parentHash));
                 }
                 //If non castling move picked
                 else {
@@ -2421,7 +2498,7 @@ public class Main {
                     if ((destinationSquareString.equals(enPassantSquareString) && (Character.toLowerCase(tempPieceSymbol) == 'p'))) {
                         //En passant was picked
                         //If player is white, the pawn to en passant is 1 square down from the en passant square
-                        if (modelIsWhite) {
+                        if (moverIsWhite) {
                             tempBoard.setPiece(destinationSquare.getRow() - 1, destinationSquare.getCol(), '.');
                             newBlackPieces.remove(SquareToString(new Square(destinationSquare.getRow()-1, destinationSquare.getCol())));
                         }
@@ -2468,7 +2545,7 @@ public class Main {
                     else if (destinationSquareString.equals("h8")) tempH8Castling = false;
                     //Update newWhitePieces + newBlackPieces
                     int pieceCount = 0;
-                    if (!modelIsWhite) {
+                    if (!moverIsWhite) {
                         for (String piece : newBlackPieces) {
                             if (piece.equals(originSquareString)) break;
                             else pieceCount++;
@@ -2491,19 +2568,20 @@ public class Main {
                         char[] promotionOptions = {'Q', 'R', 'B', 'N'};
                         for (char piece : promotionOptions) {
                             Board tempTempBoard = CopyBoard(tempBoard);
-                            if (modelIsWhite) tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), piece);
+                            if (moverIsWhite) tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), piece);
                             else tempTempBoard.setPiece(destinationSquare.getRow(), destinationSquare.getCol(), Character.toLowerCase(piece));
-                            nodeChildren.add(new TreeNode(tempTempBoard, tempEnPassantSquareString, new ArrayList<>(newWhitePieces), new ArrayList<>(newBlackPieces), tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, tempMoveCount100, modelIsWhite, GetHashString(tempTempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                            nodeChildren.add(new TreeNode(tempTempBoard, tempEnPassantSquareString, new ArrayList<>(newWhitePieces), new ArrayList<>(newBlackPieces), tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, tempMoveCount100, moverIsWhite, GetHashString(tempTempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !moverIsWhite), parentHash));
                         }
                     }
                     else {
-                        nodeChildren.add(new TreeNode(tempBoard, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, tempMoveCount100, modelIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !modelIsWhite), parentHash));
+                        nodeChildren.add(new TreeNode(tempBoard, tempEnPassantSquareString, newWhitePieces, newBlackPieces, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, tempMoveCount100, moverIsWhite, GetHashString(tempBoard, tempEnPassantSquareString, tempA1Castling, tempH1Castling, tempA8Castling, tempH8Castling, !moverIsWhite), parentHash));
                     }
                 }
             }
         }
         //By now a node has all it's possible next moves stored in nodeChildren.
         //Create a tree
+        counter += nodeChildren.size();
         Tree tree = new Tree(node, nodeChildren, null);
         HashMap<String, Tree> gameTree = new HashMap<>();
         gameTree.put(tree.getRoot().getHashedPosition(), tree);
@@ -2519,7 +2597,6 @@ public class Main {
                 stringBuilder.append(board.getPiece(row, col));
             }
         }
-        stringBuilder.append(Objects.requireNonNullElse(enPassantSquareString, "null"));
         if (a1Castling) stringBuilder.append("1");
         else stringBuilder.append("0");
         if (h1Castling) stringBuilder.append("1");
@@ -2530,6 +2607,7 @@ public class Main {
         else stringBuilder.append("0");
         if (whiteMovesNext) stringBuilder.append("1");
         else stringBuilder.append("0");
+        stringBuilder.append(Objects.requireNonNullElse(enPassantSquareString, "null"));
         return stringBuilder.toString();
     }
     public static PlayingModel InitiateModel(PlayingModel model, boolean bestReader) {

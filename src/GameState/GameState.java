@@ -25,12 +25,12 @@ public class GameState {
     String originSquareString = "";
     String destinationSquareString = "";
     char pieceSymbol = ' ';
-    boolean whiteMove = true;
+    boolean whiteMove;
     boolean captureMade = false;
     char otherPiecePromotionSymbol = 'X';
 
 
-    public GameState(Board board, boolean playerIsWhite, String enPassantSquareString, ArrayList<String> whitePieces, ArrayList<String> blackPieces, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, StringBuilder gameNotation, int turnCounter) {
+    public GameState(Board board, boolean playerIsWhite, String enPassantSquareString, ArrayList<String> whitePieces, ArrayList<String> blackPieces, boolean a1Castling, boolean h1Castling, boolean a8Castling, boolean h8Castling, int moveCount100, ArrayList<Hash> hashTable, StringBuilder gameNotation, int turnCounter, boolean whiteMove) {
         this.board = board;
         this.playerIsWhite = playerIsWhite;
         this.enPassantSquareString = enPassantSquareString;
@@ -44,6 +44,7 @@ public class GameState {
         this.hashTable = hashTable;
         this.gameNotation = gameNotation;
         this.turnCounter = turnCounter;
+        this.whiteMove = whiteMove;
     }
 
     public Board getBoard() {
