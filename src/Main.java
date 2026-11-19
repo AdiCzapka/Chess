@@ -32,51 +32,10 @@ public class Main {
 //            if (userChoice.equals("1")) {StartPregame(); valid = true;}
 //            else if (userChoice.equals("2")) {TrainModel(); valid = true;}
 //        }
-        String FEN = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
-        GameState gameState = LoadPosition(FEN);
-
-        Board board = gameState.getBoard();
-        String enPassantSquareString = gameState.getEnPassantSquareString();
-        int depth = 0;
-        ArrayList<String> whitePieces = gameState.getWhitePieces();
-        ArrayList<String> blackPieces = gameState.getBlackPieces();
-        boolean a1Castling = gameState.getA1Castling();
-        boolean h1Castling = gameState.getH1Castling();
-        boolean a8Castling = gameState.getA8Castling();
-        boolean h8Castling = gameState.getH8Castling();
-        int moveCount100 = gameState.getMoveCount100();
-        boolean whiteMove = gameState.getWhiteMove();
-        ArrayList<ArrayList<HashMap<String,Tree>>> hashMapList = new ArrayList<ArrayList<HashMap<String,Tree>>>();
-        ArrayList<HashMap<String, Tree>> hashMapLayer = new ArrayList<HashMap<String, Tree>>();
-        TreeNode root = new TreeNode(board, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, !whiteMove, GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, whiteMove), "parenthash");
-        hashMapLayer = CreateGameTreeFromNode(root, hashMapLayer, "ParentHash");
-        hashMapList.add(hashMapLayer);
-        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
-        int depth1 = counter;
-        System.out.println(depth1);
-        //depth 1
-        for (int i = 0; i < hashMapList.get(depth).size(); i++) {
-            for (Tree tree : hashMapList.get(depth).get(i).values()) {
-                for (TreeNode childNode : tree.getChildren()) {
-                    hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
-                }
-            }
-        }
-        int depth2 = counter - depth1;
-        System.out.println(depth2);
-        depth++;
-        hashMapList.add(hashMapLayer);
-        hashMapLayer = new ArrayList<HashMap<String, Tree>>();
-        for (int i = 0; i < hashMapList.get(depth).size(); i++) {
-            for (Tree tree : hashMapList.get(depth).get(i).values()) {
-                for (TreeNode childNode : tree.getChildren()) {
-                    hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
-                }
-            }
-        }
-        int depth3 = counter - depth2 - depth1;
-        System.out.println(depth3);
+        FENChecks();
     }
+
+
     public static void StartPregame() throws InterruptedException {
         BlockingQueue<GUISignal> blockingQueue = new LinkedBlockingQueue<>();
         GUI gui = new GUI(blockingQueue);
@@ -2826,6 +2785,62 @@ public class Main {
         }
         return total;
     }
-
-
+    public static void FENChecks() {
+        HashMap<String, int[]> FENs = new HashMap<>();
+        String[] FENStrings = {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+                "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
+                "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
+                "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"};
+        int[][] FENCounts = {{20, 400, 8902},{14, 191, 2812},{6, 264, 9467},{44, 1486, 62379},{48, 2039, 97862}};
+        for (int i = 0; i < FENStrings.length; i++) {
+            counter = 0;
+            String FEN = FENStrings[i];
+            GameState gameState = LoadPosition(FEN);
+            Board board = gameState.getBoard();
+            String enPassantSquareString = gameState.getEnPassantSquareString();
+            int depth = 0;
+            ArrayList<String> whitePieces = gameState.getWhitePieces();
+            ArrayList<String> blackPieces = gameState.getBlackPieces();
+            boolean a1Castling = gameState.getA1Castling();
+            boolean h1Castling = gameState.getH1Castling();
+            boolean a8Castling = gameState.getA8Castling();
+            boolean h8Castling = gameState.getH8Castling();
+            int moveCount100 = gameState.getMoveCount100();
+            boolean whiteMove = gameState.getWhiteMove();
+            ArrayList<ArrayList<HashMap<String,Tree>>> hashMapList = new ArrayList<ArrayList<HashMap<String,Tree>>>();
+            ArrayList<HashMap<String, Tree>> hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+            TreeNode root = new TreeNode(board, enPassantSquareString, whitePieces, blackPieces, a1Castling, h1Castling, a8Castling, h8Castling, moveCount100, !whiteMove, GetHashString(board, enPassantSquareString, a1Castling, h1Castling, a8Castling, h8Castling, whiteMove), "parenthash");
+            hashMapLayer = CreateGameTreeFromNode(root, hashMapLayer, "ParentHash");
+            hashMapList.add(hashMapLayer);
+            hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+            int depth1 = counter;
+            if (depth1 == FENCounts[i][0]) {System.out.println("Depth 1 for FEN " + i + " successful");}
+            else {System.out.println("Depth 1 for FEN " + i + " failed");}
+            //depth 1
+            for (int j = 0; j < hashMapList.get(depth).size(); j++) {
+                for (Tree tree : hashMapList.get(depth).get(j).values()) {
+                    for (TreeNode childNode : tree.getChildren()) {
+                        hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
+                    }
+                }
+            }
+            int depth2 = counter - depth1;
+            if (depth2 == FENCounts[i][1]) {System.out.println("Depth 2 for FEN " + i + " successful");}
+            else {System.out.println("Depth 2 for FEN " + i + " failed");}
+            depth++;
+            hashMapList.add(hashMapLayer);
+            hashMapLayer = new ArrayList<HashMap<String, Tree>>();
+            for (int j = 0; j < hashMapList.get(depth).size(); j++) {
+                for (Tree tree : hashMapList.get(depth).get(j).values()) {
+                    for (TreeNode childNode : tree.getChildren()) {
+                        hashMapLayer = CreateGameTreeFromNode(childNode, hashMapLayer, "parenthash");
+                    }
+                }
+            }
+            int depth3 = counter - depth2 - depth1;
+            if (depth3 == FENCounts[i][2]) {System.out.println("Depth 3 for FEN " + i + " successful");}
+            else {System.out.println("Depth 3 for FEN " + i + " failed");}
+        }
+    }
 }
